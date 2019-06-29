@@ -94,7 +94,7 @@ public class IVDSPLagrangianCG
 		VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(0, this.vehicleGraphs, initialTripVehicleMultipliers, this.deadrunLowerLimitMultiplier, this.deadrunUpperLimitMultiplier, this.idleTimeMultiplier, false); 
 		this.blocksGenerated.addAll(vehicleSubproblem.getBlocksGenerated());
 		
-		DriverSubproblem driverSubproblem = new DriverSubproblem(0, this.driverGraphs, initialTripDriverMultipliers, this.deadrunLowerLimitMultiplier, this.deadrunUpperLimitMultiplier, this.idleTimeMultiplier, false); 
+		DriverSubproblem driverSubproblem = new DriverSubproblem(0, this.driverGraphs, initialTripDriverMultipliers, this.deadrunLowerLimitMultiplier, this.deadrunUpperLimitMultiplier, this.idleTimeMultiplier, new ArrayList<Trip>(), new ArrayList<Deadrun>(), new ArrayList<IdleTime>(), false); 
 		this.dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
 		
 	}
@@ -180,7 +180,7 @@ public class IVDSPLagrangianCG
 			VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iteration, this.vehicleGraphs, this.tripVehicleMultipliers, this.deadrunLowerLimitMultiplier, this.deadrunUpperLimitMultiplier, this.idleTimeMultiplier, false); 
 			List<Block> blocks = vehicleSubproblem.getBlocksGenerated();
 			
-			DriverSubproblem driverSubproblem = new DriverSubproblem(iteration, this.driverGraphs, this.tripDriverMultipliers, this.deadrunLowerLimitMultiplier, this.deadrunUpperLimitMultiplier, this.idleTimeMultiplier, false); 
+			DriverSubproblem driverSubproblem = new DriverSubproblem(iteration, this.driverGraphs, this.tripDriverMultipliers, this.deadrunLowerLimitMultiplier, this.deadrunUpperLimitMultiplier, this.idleTimeMultiplier, new ArrayList<Trip>(), new ArrayList<Deadrun>(), new ArrayList<IdleTime>(), false); 
 			List<Duty> duties = driverSubproblem.getDutiesGenerated();
 			
 			if(!blocks.isEmpty())

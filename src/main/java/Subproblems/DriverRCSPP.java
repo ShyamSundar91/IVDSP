@@ -2,6 +2,7 @@ package Subproblems;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,15 +28,23 @@ public class DriverRCSPP
 	private DriverVertex sourceVertex; 
 	private DriverVertex sinkVertex; 
 	
+	private List<Trip> tripsInSolution; 
+	private List<Deadrun> deadrunsInSolutions; 
+	private List<IdleTime> idleTimesInSolution; 
+	
 	private List<DriverVertex> queue; 
 	@Getter
 	private List<Duty> dutiesGenerated; 
 	private boolean generateAllVariables; 
+	private boolean heuristic; 
 	
-	public DriverRCSPP(DutyType dutyType, DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph)
+	public DriverRCSPP(DutyType dutyType, DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph, List<Trip> tripsInSolution, List<Deadrun> deadrunsInSolutions, List<IdleTime> idleTimesInSolution)
 	{
 		this.dutyType = dutyType; 
 		this.driverGraph = driverGraph; 
+		this.tripsInSolution = tripsInSolution; 
+		this.deadrunsInSolutions = deadrunsInSolutions; 
+		this.idleTimesInSolution = idleTimesInSolution; 
 		
 		this.sourceVertex = this.driverGraph.vertexSet().stream().filter(v -> v.getCurrentTime() == -1).findFirst().get(); 
 		this.sinkVertex = this.driverGraph.vertexSet().stream().filter(v -> v.getCurrentTime() == Integer.MAX_VALUE).findFirst().get(); 
@@ -47,6 +56,7 @@ public class DriverRCSPP
 		this.queue = new ArrayList<DriverVertex>();
 		this.dutiesGenerated = new ArrayList<Duty>(); 
 		this.generateAllVariables = false; 
+		this.heuristic = true; 
 		
 		initialization(); 
 		
@@ -68,6 +78,11 @@ public class DriverRCSPP
 			DriverVertex selectedVertex = this.queue.get(0); 
 			
 			Set<DriverArc> outgoingArcs = this.driverGraph.outgoingEdgesOf(selectedVertex); 
+			
+			/*if(this.heuristic)
+			{
+				outgoingArcs = selectArcs(outgoingArcs); 
+			}*/
 			
 			for(LabelDriver selectedLabel : selectedVertex.getLabels())
 			{
@@ -118,6 +133,40 @@ public class DriverRCSPP
 		}
 		
 		retrievePaths(); 
+	}
+	
+	private Set<DriverArc> selectArcs(Set<DriverArc> outgoingArcs)
+	{
+		Set<DriverArc> selectedArcs = new HashSet<DriverArc>(); 
+		
+		for(DriverArc outgoingArc : outgoingArcs)
+		{
+			if(outgoingArc.getTrip() != null && this.tripsInSolution.contains(outgoingArc.getTrip()))
+			{
+				selectedArcs.add(outgoingArc); 
+			}
+			else if(outgoingArc.getDeadrun() != null && this.deadrunsInSolutions.contains(outgoingArc.getDeadrun()))
+			{
+				selectedArcs.add(outgoingArc); 
+			}
+			else if(outgoingArc.getIdleTimeOnArc() != null && this.idleTimesInSolution.contains(outgoingArc.getIdleTimeOnArc()))
+			{
+				selectedArcs.add(outgoingArc); 
+			}
+			else
+			{
+				/*if(outgoingArc.getSuccessorVertex().getTrip() != null && this.tripsInSolution.contains(outgoingArc.getSuccessorVertex().getTrip()))
+				{
+					selectedArcs.add(outgoingArc); 
+				}*/
+				//else if(outgoingArc.getSuccessorVertex().getDeadrun() != null && this.deadrunsInSolutions.contains(outgoingArc.getSuccessorVertex().getDeadrun()))
+				{
+					selectedArcs.add(outgoingArc); 
+				}
+			}
+		}
+		
+		return selectedArcs; 
 	}
 	
 	private void checkDomination(DriverVertex driverVertex, LabelDriver newLabel)

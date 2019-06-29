@@ -120,7 +120,7 @@ public class App
     	
     	System.out.println("***********************************************");
     	
-    	InitialSolutionController inSol = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs); 
+    	InitialSolutionController inSol = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
     	
     	/*Map<Trip, Double> tripVehicleMultiplier = new HashMap<Trip, Double>(); 
     	Map<Trip, Double> tripDriverMultiplier = new HashMap<Trip, Double>(); 

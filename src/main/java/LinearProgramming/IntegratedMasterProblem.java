@@ -223,7 +223,7 @@ public class IntegratedMasterProblem
 		List<Duty> dutiesGenerated = new ArrayList<Duty>(); 
 		//if(iterationNumber%2 != 0 || blocksGenerated.isEmpty())
 		{
-			DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, usedFarkas); 
+			DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, new ArrayList<Trip>(), new ArrayList<Deadrun>(), new ArrayList<IdleTime>(), usedFarkas); 
 			dutiesGenerated = driverSubproblem.getDutiesGenerated(); 
 		}
 		

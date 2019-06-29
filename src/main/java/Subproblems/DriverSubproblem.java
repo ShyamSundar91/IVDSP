@@ -23,11 +23,15 @@ public class DriverSubproblem
 	private Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit; 
 	private Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit; 
 	private Map<IdleTime, Double> dualValuesOfIdleTimes;
+	private List<Trip> tripsInSolution; 
+	private List<Deadrun> deadrunsInSolution; 
+	private List<IdleTime> idleTimesInSolution;
 	private boolean usedFarkas; 
 	@Getter
 	private List<Duty> dutiesGenerated; 
 
-	public DriverSubproblem(int globalIterationNumber, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, boolean usedFarkas)
+	public DriverSubproblem(int globalIterationNumber, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes,
+			List<Trip> tripsInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution, boolean usedFarkas)
 	{
 		this.globalIterationNumber = globalIterationNumber;  
 		this.driverGraphs = driverGraphs; 
@@ -35,6 +39,9 @@ public class DriverSubproblem
 		this.dualValuesOfDeadrunsLowerLimit = dualValuesOfDeadrunsLowerLimit; 
 		this.dualValuesOfDeadrunsUpperLimit = dualValuesOfDeadrunsUpperLimit; 
 		this.dualValuesOfIdleTimes = dualValuesOfIdleTimes; 
+		this.tripsInSolution = tripsInSolution; 
+		this.deadrunsInSolution = deadrunsInSolution; 
+		this.idleTimesInSolution = idleTimesInSolution; 
 		this.usedFarkas = usedFarkas; 
 		
 		chooseSubproblem(); 
@@ -86,7 +93,7 @@ public class DriverSubproblem
 			vertex.getLabels().clear();
 		}
 		
-		DriverRCSPP rcspp = new DriverRCSPP(chosenSubproblem.getDutyType(), this.driverGraphs.get(chosenSubproblem)); 
+		DriverRCSPP rcspp = new DriverRCSPP(chosenSubproblem.getDutyType(), this.driverGraphs.get(chosenSubproblem), this.tripsInSolution, this.deadrunsInSolution, this.idleTimesInSolution); 
 		this.dutiesGenerated = rcspp.getDutiesGenerated(); 
 		System.out.println("Number of duties generated " + this.dutiesGenerated.size());
 	}

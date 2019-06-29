@@ -60,15 +60,15 @@ public class DriverArc implements Comparable<DriverArc>
 	{
 		this.reducedCostOfArc = 0.0; 
 		double rhs = 0.0; 
-		if(this.trip != null)
+		if(this.trip != null && dualValuesOfTrips.containsKey(this.trip))
 		{
 			rhs = rhs + dualValuesOfTrips.get(this.trip); 
 		}
-		else if(this.deadrun != null)
+		else if(this.deadrun != null && dualValuesOfDeadrunLowerLimit.containsKey(this.deadrun))
 		{
 			rhs = rhs + dualValuesOfDeadrunLowerLimit.get(this.deadrun) + dualValuesOfDeadrunUpperLimit.get(this.deadrun); 
 		}
-		else if(this.idleTimeOnArc != null)
+		else if(this.idleTimeOnArc != null && dualValuesOfIdleTimes.containsKey(this.idleTimeOnArc))
 		{
 			rhs = rhs + dualValuesOfIdleTimes.get(this.idleTimeOnArc); 
 		}

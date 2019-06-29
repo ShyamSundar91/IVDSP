@@ -36,7 +36,11 @@ public class SingleDepotVehicleScheduling
 	private Map<Trip, IloRange> successorTripConstraints;
 	private Map<Trip, IloRange> predecessorTripConstaints;
 	@Getter
-	private List<Block> blocksInSolution; 
+	private List<Block> blocksInSolution;
+	@Getter
+	private List<Deadrun> deadrunsInSolution;
+	@Getter
+	private List<IdleTime> idleTimesInSolution; 
 	public SingleDepotVehicleScheduling(int lineNumber, List<Trip> tripsInLine, VehicleTypeDepot vehicleTypeDepot,  DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph) throws IloException
 	{
 		this.lineNumber = lineNumber; 
@@ -44,6 +48,8 @@ public class SingleDepotVehicleScheduling
 		this.vehicleGraph = vehicleGraph; 
 		this.vehicleTypeDepot = vehicleTypeDepot; 
 		this.blocksInSolution = new ArrayList<Block>(); 
+		this.deadrunsInSolution = new ArrayList<Deadrun>(); 
+		this.idleTimesInSolution = new ArrayList<IdleTime>(); 
 		
 		this.cplex = new IloCplex();
 		this.cplex.addMinimize(); 
@@ -90,8 +96,16 @@ public class SingleDepotVehicleScheduling
 				while(!stop)
 				{
 					blockActivities.addAll(current.getBlockActivitiesOnEdge()); 
-					deadruns.addAll(current.getDeadrunsOnEdge()); 
-					idleTimes.add(current.getIdleTimeOnArc()); 
+					if(!current.getDeadrunsOnEdge().isEmpty())
+					{
+						deadruns.addAll(current.getDeadrunsOnEdge());
+					}
+					 
+					if(current.getIdleTimeOnArc() != null)
+					{
+						idleTimes.add(current.getIdleTimeOnArc());
+					}
+					 
 					
 					
 					if(current.getSuccessorVertex().getTrip() != null)
@@ -110,6 +124,29 @@ public class SingleDepotVehicleScheduling
 				Collections.sort(blockActivities);
 				Block block = new Block(this.vehicleTypeDepot.getVehicleType(), trips, deadruns, idleTimes, blockActivities); 
 				this.blocksInSolution.add(block); 
+				for(Deadrun deadrun : block.getDeadrunsInBlock())
+				{
+					if(!this.deadrunsInSolution.contains(deadrun))
+					{
+						this.deadrunsInSolution.add(deadrun); 
+					}
+					else
+					{
+						throw new IllegalArgumentException(); 
+					}
+				}
+				
+				for(IdleTime idleTime : block.getIdleTimesInBlock())
+				{
+					if(!this.idleTimesInSolution.contains(idleTime))
+					{
+						this.idleTimesInSolution.add(idleTime); 
+					}
+					else
+					{
+						throw new IllegalArgumentException(); 
+					}
+				}
 			}
 		}
 	}

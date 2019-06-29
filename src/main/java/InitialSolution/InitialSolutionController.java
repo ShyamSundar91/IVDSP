@@ -13,11 +13,16 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import Data.Node;
 import Data.Trip;
 import Data.VehicleTravel;
+import Networks.DriverArc;
+import Networks.DriverVertex;
+import Networks.DutyTypeDepot;
 import Networks.VehicleArc;
 import Networks.VehicleTypeDepot;
 import Networks.VehicleVertex;
 import Variables.Block;
 import Variables.BlockActivity;
+import Variables.Deadrun;
+import Variables.IdleTime;
 import ilog.concert.IloException;
 
 public class InitialSolutionController 
@@ -25,15 +30,16 @@ public class InitialSolutionController
 	private List<Trip> allTrips; 
 	private Set<VehicleTravel> allVehicleTravels; 
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs; 
-
+	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs; 
 	private List<Node> depots; 
 	private Set<Integer> lines; 
 	
-	public InitialSolutionController(List<Trip> allTrips, Set<VehicleTravel> allVehicleTravels, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs) throws IloException
+	public InitialSolutionController(List<Trip> allTrips, Set<VehicleTravel> allVehicleTravels, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs) throws IloException
 	{
 		this.allTrips = allTrips; 
 		this.allVehicleTravels = allVehicleTravels; 
 		this.vehicleGraphs = vehicleGraphs; 
+		this.driverGraphs = driverGraphs; 
 		
 		this.depots = new ArrayList<Node>(); 
 		for(VehicleTypeDepot vehicleTypeDepot : this.vehicleGraphs.keySet())
@@ -61,6 +67,9 @@ public class InitialSolutionController
 			DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraphForLine = this.vehicleGraphs.get(bestDepot); 
 			
 			SingleDepotVehicleScheduling sdvsp = new SingleDepotVehicleScheduling(lineNumber, tripsInLine, bestDepot, vehicleGraphForLine); 
+			List<Block> blocksInSolution = sdvsp.getBlocksInSolution(); 
+			List<Deadrun> deadrunsInSolution = sdvsp.getDeadrunsInSolution(); 
+			List<IdleTime> idleTimesInSolution = sdvsp.getIdleTimesInSolution(); 
 			for(Block block : sdvsp.getBlocksInSolution())
 			{
 				for(BlockActivity ba : block.getBlockActivities())
@@ -68,7 +77,14 @@ public class InitialSolutionController
 					System.out.println(block.getBlockId() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
 				}
 			}
+			
+			driverScheduling(tripsInLine, blocksInSolution, deadrunsInSolution, idleTimesInSolution); 
 		}
+	}
+	
+	private void driverScheduling(List<Trip> tripsInLine, List<Block> blocksInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution) throws IloException
+	{
+		DriverScheduling dsp = new DriverScheduling(tripsInLine, blocksInSolution, deadrunsInSolution, idleTimesInSolution, this.driverGraphs); 
 	}
 	
 	private VehicleTypeDepot selectDepotForLine(List<Trip> tripsInLine)

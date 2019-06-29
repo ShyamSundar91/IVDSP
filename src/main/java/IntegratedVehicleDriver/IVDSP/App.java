@@ -99,7 +99,7 @@ public class App
     	Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs = driverGraphgen.getDriverGraphs(); 
     	List<Duty> dutiesGenerated = new ArrayList<Duty>();  //driverGraphgen.getDutiesGenerated(); 
     	System.out.println("***********************************************");
-    	for(Trip trip : allTrips)
+    	/*for(Trip trip : allTrips)
     	{
     		System.out.println(trip.getTripId() + "; " + trip.getDepartureNode().getNodeId() + "; " + trip.getArrivalNode().getNodeId() + "; " + trip.getDepartureTime() + "; " + trip.getArrivalTime());
     	}
@@ -118,7 +118,7 @@ public class App
     		System.out.println(idleTime.getNode().getNodeId() + "; " + idleTime.getDepartureTime() + "; " + idleTime.getArrivalTime());
     	}
     	
-    	System.out.println("***********************************************");
+    	System.out.println("***********************************************");*/
     	
     	InitialSolutionController inSol = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
     	

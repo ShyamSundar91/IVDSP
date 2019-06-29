@@ -79,10 +79,10 @@ public class DriverRCSPP
 			
 			Set<DriverArc> outgoingArcs = this.driverGraph.outgoingEdgesOf(selectedVertex); 
 			
-			/*if(this.heuristic)
+			if(this.heuristic)
 			{
 				outgoingArcs = selectArcs(outgoingArcs); 
-			}*/
+			}
 			
 			for(LabelDriver selectedLabel : selectedVertex.getLabels())
 			{
@@ -155,11 +155,30 @@ public class DriverRCSPP
 			}
 			else
 			{
-				/*if(outgoingArc.getSuccessorVertex().getTrip() != null && this.tripsInSolution.contains(outgoingArc.getSuccessorVertex().getTrip()))
+				if(outgoingArc.getSuccessorVertex().getTrip() != null && this.tripsInSolution.contains(outgoingArc.getSuccessorVertex().getTrip()))
 				{
-					selectedArcs.add(outgoingArc); 
-				}*/
-				//else if(outgoingArc.getSuccessorVertex().getDeadrun() != null && this.deadrunsInSolutions.contains(outgoingArc.getSuccessorVertex().getDeadrun()))
+					if(outgoingArc.getIdleTimeOnArc() == null)
+					{
+						selectedArcs.add(outgoingArc);
+					}
+					else if(this.idleTimesInSolution.contains(outgoingArc.getIdleTimeOnArc()))
+					{
+						selectedArcs.add(outgoingArc); 
+					}
+					
+				}
+				else if(outgoingArc.getSuccessorVertex().getDeadrun() != null && this.deadrunsInSolutions.contains(outgoingArc.getSuccessorVertex().getDeadrun()))
+				{
+					if(outgoingArc.getIdleTimeOnArc() == null)
+					{
+						selectedArcs.add(outgoingArc);
+					}
+					else if(this.idleTimesInSolution.contains(outgoingArc.getIdleTimeOnArc()))
+					{
+						selectedArcs.add(outgoingArc); 
+					}
+				}
+				else if(outgoingArc.getSuccessorVertex().getCurrentNode() == null)
 				{
 					selectedArcs.add(outgoingArc); 
 				}

@@ -120,7 +120,7 @@ public class App
     	
     	System.out.println("***********************************************");*/
     	
-    	InitialSolutionController inSol = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
+    	//InitialSolutionController inSol = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
     	
     	/*Map<Trip, Double> tripVehicleMultiplier = new HashMap<Trip, Double>(); 
     	Map<Trip, Double> tripDriverMultiplier = new HashMap<Trip, Double>(); 
@@ -139,15 +139,15 @@ public class App
     		idleTimeMultiplier.put(i, 0.0); 
     	});
     	
-    	
+    	*/
     	long start = System.currentTimeMillis(); 
     	/*IVDSPLagrangianCG  lag = new IVDSPLagrangianCG (allTrips, allDeadruns, allIdleTimes, vehicleGraphs, driverGraphs); 
     	List<Block> blocksGenerated = lag.getBlocksGenerated(); 
-    	List<Duty> dutiesGenerated = lag.getDutiesGenerated(); 
+    	List<Duty> dutiesGenerated = lag.getDutiesGenerated(); */
     	
     	IntegratedMasterProblem mp = new IntegratedMasterProblem(allTrips, allDeadruns, allIdleTimes, vehicleGraphs, driverGraphs,  blocksGenerated, dutiesGenerated);
     	long end = System.currentTimeMillis(); 
-    	System.out.println((end - start)/ 1000.00);*/
+    	System.out.println((end - start)/ 1000.00);
  
     }
 }

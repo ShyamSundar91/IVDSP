@@ -64,7 +64,7 @@ public class VehicleArc
 	{
 		this.reducedCostOfArc = 0.0; 
 		double rhs = 0.0; 
-		if(!deadrunsOnEdge.isEmpty())
+		if(!deadrunsOnEdge.isEmpty() && !dualValuesOfDeadrunsLowerLimit.isEmpty())
 		{
 			for(Deadrun deadrunOnEdge : this.deadrunsOnEdge)
 			{
@@ -73,7 +73,7 @@ public class VehicleArc
 			}
 		}
 		
-		if(this.idleTimeOnArc != null)
+		if(this.idleTimeOnArc != null && !dualValuesOfIdleTimes.isEmpty())
 		{
 			rhs = rhs - dualValuesOfIdleTimes.get(this.idleTimeOnArc); 
 		}

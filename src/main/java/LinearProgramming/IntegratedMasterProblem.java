@@ -65,9 +65,9 @@ public class IntegratedMasterProblem
 		this.cplex.addMinimize(); 
 		this.tripVehicleConstraints = addTripVehicleConstraints(this.trips); 
 		this.tripDriverConstraints = addTripDriverVehicleConstraints(this.trips);
-		this.deadrunLowerLimitLinkingConstraints = addDeadrunLowerLimitLinkingConstrains(this.deadruns); 
-		this.deadrunUpperLimitLinkingConstraints = addDeadrunUpperLimitLinkingConstraints(this.deadruns); 
-		this.continousBusAttendanceConstraints = addContinuousBusAttendanceConstraints(this.idleTimes); 
+		//this.deadrunLowerLimitLinkingConstraints = addDeadrunLowerLimitLinkingConstrains(this.deadruns); 
+		//this.deadrunUpperLimitLinkingConstraints = addDeadrunUpperLimitLinkingConstraints(this.deadruns); 
+		//this.continousBusAttendanceConstraints = addContinuousBusAttendanceConstraints(this.idleTimes); 
 		this.blockVariables = new HashMap<Block, IloNumVar>(); 
 		this.dutyVariables = new HashMap<Duty, IloNumVar>(); 
 		
@@ -122,7 +122,7 @@ public class IntegratedMasterProblem
 					tripsDriverDual.replace(trip, this.cplex.getDual(this.tripDriverConstraints.get(trip))); 
 				}
 				
-				for(Deadrun deadrun : this.deadruns)
+				/*for(Deadrun deadrun : this.deadruns)
 				{
 					deadrunsLowerLimitDual.put(deadrun, 0.0); 
 					deadrunsUpperLimitDual.put(deadrun, 0.0); 
@@ -134,7 +134,7 @@ public class IntegratedMasterProblem
 				{
 					idleTimesDual.put(idleTime, 0.0);
 					idleTimesDual.replace(idleTime, this.cplex.getDual(this.continousBusAttendanceConstraints.get(idleTime))); 
-				}
+				}*/
 				
 				status = solveSubproblems(iterationNumber, tripsVehicleDual, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, false); 
 				
@@ -216,7 +216,7 @@ public class IntegratedMasterProblem
 		List<Block> blocksGenerated = new ArrayList<Block>(); 
 		//if(iterationNumber%2 == 0)
 		{
-			VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, usedFarkas); 
+			VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.trips, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, usedFarkas); 
 			blocksGenerated = vehicleSubproblem.getBlocksGenerated(); 
 		}
 		
@@ -315,7 +315,7 @@ public class IntegratedMasterProblem
 				blockVariable = blockVariable.and(this.cplex.column(this.tripVehicleConstraints.get(trip), 1)); 
 			}
 			
-			for(Deadrun deadrun : block.getDeadrunsInBlock())
+			/*for(Deadrun deadrun : block.getDeadrunsInBlock())
 			{
 				blockVariable = blockVariable.and(this.cplex.column(this.deadrunLowerLimitLinkingConstraints.get(deadrun), -1)); 
 				
@@ -325,7 +325,7 @@ public class IntegratedMasterProblem
 			for(IdleTime idleTime : block.getIdleTimesInBlock())
 			{
 				blockVariable = blockVariable.and(this.cplex.column(this.continousBusAttendanceConstraints.get(idleTime), -1)); 
-			}
+			}*/
 			
 			this.blockVariables.put(block, this.cplex.numVar(blockVariable, 0, Double.MAX_VALUE, "block_" + block.getBlockId())); 
 		}
@@ -342,7 +342,7 @@ public class IntegratedMasterProblem
 				dutyVariable = dutyVariable.and(this.cplex.column(this.tripDriverConstraints.get(trip), 1)); 
 			}
 			
-			for(Deadrun deadrun : duty.getDeadrunsInDuty())
+			/*for(Deadrun deadrun : duty.getDeadrunsInDuty())
 			{
 				dutyVariable = dutyVariable.and(this.cplex.column(this.deadrunLowerLimitLinkingConstraints.get(deadrun), 1)); 
 				
@@ -352,7 +352,7 @@ public class IntegratedMasterProblem
 			for(IdleTime idleTime : duty.getIdleTimesInDuty())
 			{
 				dutyVariable = dutyVariable.and(this.cplex.column(this.continousBusAttendanceConstraints.get(idleTime), 1)); 
-			}
+			}*/
 			
 			this.dutyVariables.put(duty, this.cplex.numVar(dutyVariable, 0, Double.MAX_VALUE, "duty_" + duty.getDutyId())); 
 		}

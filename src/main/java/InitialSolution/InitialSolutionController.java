@@ -22,6 +22,7 @@ import Networks.VehicleVertex;
 import Variables.Block;
 import Variables.BlockActivity;
 import Variables.Deadrun;
+import Variables.Duty;
 import Variables.IdleTime;
 import ilog.concert.IloException;
 
@@ -62,15 +63,24 @@ public class InitialSolutionController
 		
 		for(Integer lineNumber : this.lines)
 		{
+			long start = System.currentTimeMillis(); 
+			double totalCost = 0; 
+			
 			List<Trip> tripsInLine = this.allTrips.stream().filter(t -> t.getLineNumber() == lineNumber.intValue()).collect(Collectors.toList()); 
+			System.out.println("***************************************************");
+			System.out.println("Line number = " + lineNumber + ", number of trips = " + tripsInLine.size());
 			VehicleTypeDepot bestDepot = selectDepotForLine(tripsInLine); 
 			DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraphForLine = this.vehicleGraphs.get(bestDepot); 
 			
-			SingleDepotVehicleScheduling sdvsp = new SingleDepotVehicleScheduling(lineNumber, tripsInLine, bestDepot, vehicleGraphForLine); 
+			VehicleSchedulingCG vspCg = new VehicleSchedulingCG(lineNumber, tripsInLine, bestDepot, vehicleGraphForLine); 
+			List<Block> blocksInSolution = vspCg.getBlocksInSolution();  
+			List<Deadrun> deadrunsInSolution = vspCg.getDeadrunsInSolution();  
+			List<IdleTime> idleTimesInSolution = vspCg.getIdleTimesInSolution();  
+			/*SingleDepotVehicleScheduling sdvsp = new SingleDepotVehicleScheduling(lineNumber, tripsInLine, bestDepot, vehicleGraphForLine); 
 			List<Block> blocksInSolution = sdvsp.getBlocksInSolution(); 
 			List<Deadrun> deadrunsInSolution = sdvsp.getDeadrunsInSolution(); 
-			List<IdleTime> idleTimesInSolution = sdvsp.getIdleTimesInSolution(); 
-			for(Block block : sdvsp.getBlocksInSolution())
+			List<IdleTime> idleTimesInSolution = sdvsp.getIdleTimesInSolution(); */
+			for(Block block : blocksInSolution)
 			{
 				for(BlockActivity ba : block.getBlockActivities())
 				{
@@ -78,13 +88,30 @@ public class InitialSolutionController
 				}
 			}
 			
-			driverScheduling(tripsInLine, blocksInSolution, deadrunsInSolution, idleTimesInSolution); 
+			List<Duty> dutiesInSolution = driverScheduling(tripsInLine, blocksInSolution, deadrunsInSolution, idleTimesInSolution); 
+			for(Block block : blocksInSolution)
+			{
+				totalCost = totalCost + block.getLhs(); 
+			}
+			
+			for(Duty duty : dutiesInSolution)
+			{
+				totalCost = totalCost + duty.getTotalAmountPaid(); 
+			}
+			
+			System.out.println("Line number = " + lineNumber + ", total cost = " + totalCost);
+			long end = System.currentTimeMillis(); 
+			System.out.println("Total time = " + (double)(end-start)/(double)1000);
+			
 		}
 	}
 	
-	private void driverScheduling(List<Trip> tripsInLine, List<Block> blocksInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution) throws IloException
+	private List<Duty> driverScheduling(List<Trip> tripsInLine, List<Block> blocksInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution) throws IloException
 	{
 		DriverScheduling dsp = new DriverScheduling(tripsInLine, blocksInSolution, deadrunsInSolution, idleTimesInSolution, this.driverGraphs); 
+		List<Duty> dutiesInSolution = dsp.getDutiesInSolution(); 
+		
+		return dutiesInSolution; 
 	}
 	
 	private VehicleTypeDepot selectDepotForLine(List<Trip> tripsInLine)

@@ -24,6 +24,7 @@ import ilog.concert.IloNumVar;
 import ilog.concert.IloNumVarType;
 import ilog.concert.IloRange;
 import ilog.cplex.IloCplex;
+import lombok.Getter;
 
 public class DriverScheduling 
 {
@@ -38,6 +39,7 @@ public class DriverScheduling
 	private Map<Duty, IloNumVar> dutyVariables; 
 	private Map<Trip, IloNumVar> slackTripDuty;
 	private Map<Deadrun, IloNumVar> slackDeadrunDuty; 
+	@Getter
 	private List<Duty> dutiesInSolution; 
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
 	public DriverScheduling(List<Trip> tripsInLine, List<Block> blocksInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution,
@@ -48,6 +50,7 @@ public class DriverScheduling
 		this.deadrunsInSolution = deadrunsInSolution; 
 		this.idleTimesInSolution = idleTimesInSolution; 
 		this.driverGraphs = driverGraphs; 
+		this.dutiesInSolution = new ArrayList<Duty>(); 
 		
 		this.cplex = new IloCplex(); 
 		this.cplex.addMinimize(); 
@@ -137,21 +140,18 @@ public class DriverScheduling
 		
 		if(this.cplex.solve())
 		{
-			double total = 0; 
 			for(Duty duty : this.dutyVariables.keySet())
 			{
 				double value = this.cplex.getValue(this.dutyVariables.get(duty)); 
 				if(value > 0.99)
 				{
+					this.dutiesInSolution.add(duty); 
 					for(DutyActivity da : duty.getDutyActivities())
 					{
 						System.out.println(duty.getDutyId() + "; " + duty.getTotalDuration() + "; " + da.getDepartureNode().getNodeId() + "; " + da.getArrivalNode().getNodeId() + "; " + da.getDepartureTime() + "; " + da.getArrivalTime() + "; " + da.getActivity() + "; " + da.getTripOrDeadrunId());
-					}
-					total = total + duty.getTotalDuration(); 
+					} 
 				}
 			}
-			
-			System.out.println("Total duration = " + total);
 		}
 	}
 	

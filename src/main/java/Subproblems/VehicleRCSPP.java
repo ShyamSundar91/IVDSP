@@ -33,13 +33,16 @@ public class VehicleRCSPP
 	@Getter
 	private List<Block> blocksGenerated; 
 	private Map<Trip, Double> dualValuesOfTripIDs; 
+	private List<Trip> tripsToGenerateVariables; 
 	
-	private boolean generateAllVariables; 
-	public VehicleRCSPP(VehicleType vehicleType, DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs)
+	private boolean generateAllVariables;
+	private boolean heuristic; 
+	public VehicleRCSPP(VehicleType vehicleType, List<Trip> tripsToGenerateVariables, DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs)
 	{
 		this.vehicleType = vehicleType; 
 		this.vehicleGraph = vehicleGraph;  
 		this.dualValuesOfTripIDs = dualValuesOfTripIDs; 
+		this.tripsToGenerateVariables = tripsToGenerateVariables; 
 		
 		this.sourceVertex = this.vehicleGraph.vertexSet().stream().filter(v -> v.getVertexId() == -1).collect(Collectors.toList()).get(0); 
 		this.sinkVertex = this.vehicleGraph.vertexSet().stream().filter(v -> v.getVertexId() == Integer.MAX_VALUE).collect(Collectors.toList()).get(0); 
@@ -52,6 +55,7 @@ public class VehicleRCSPP
 		this.queue = new ArrayList<VehicleVertex>(); 
 		
 		this.generateAllVariables = false; 
+		this.heuristic = false; 
 		
 		initialization(); 
 		
@@ -73,6 +77,11 @@ public class VehicleRCSPP
 			VehicleVertex selectedVertex = this.queue.get(0); 
 			
 			Set<VehicleArc> outgoingArcs = this.vehicleGraph.outgoingEdgesOf(selectedVertex).stream().collect(Collectors.toSet()); 
+			
+			if(this.heuristic)
+			{
+				outgoingArcs = selectArc(outgoingArcs); 
+			}
 			
 			for(LabelVehicle label : selectedVertex.getLabels())
 			{
@@ -126,7 +135,24 @@ public class VehicleRCSPP
 		reterievePaths(); 
 	}
 	
-	
+	private Set<VehicleArc> selectArc(Set<VehicleArc> outgoingArcs)
+	{
+		Set<VehicleArc> selectedArc = new HashSet<VehicleArc>(); 
+		
+		for(VehicleArc arc : outgoingArcs)
+		{
+			if(arc.getSuccessorVertex().getTrip() != null && this.tripsToGenerateVariables.contains(arc.getSuccessorVertex().getTrip()))
+			{
+				selectedArc.add(arc); 
+			}
+			else if(arc.getSuccessorVertex().getTrip() == null)
+			{
+				selectedArc.add(arc); 
+			}
+		}
+		
+		return selectedArc; 
+	}
 	
 	private void checkDomination(VehicleVertex vehicleVertex, LabelVehicle newLabel)
 	{
@@ -225,8 +251,10 @@ public class VehicleRCSPP
 		//System.out.println("Final labels = " + labelsAtSink.size());
 		if(labelsAtSink.size() > 500 && !this.generateAllVariables)
 		{
-			Collections.sort(labelsAtSink);
-			labelsAtSink = labelsAtSink.subList(0, 500);
+			//Collections.sort(labelsAtSink);
+			//labelsAtSink = labelsAtSink.subList(0, 500);
+			
+			labelsAtSink = selectComplementaryColumns(labelsAtSink); 
 		}
 		
 		List<VehicleVertex> vehicleVertices = new ArrayList<VehicleVertex>();
@@ -325,6 +353,37 @@ public class VehicleRCSPP
 				Assert.assertTrue("Error in calculation of reduced cost", Math.abs(reducedCost-finalLabel.getUpdatedResources().getUpdatedReducedCost()) < 0.001);
 			}*/
 		}
+	}
+	
+	private List<LabelVehicle> selectComplementaryColumns(List<LabelVehicle> labelsAtSink)
+	{
+		Set<Trip> tripsCovered = new HashSet<Trip>(); 
+		List<LabelVehicle> selectedLabels = new ArrayList<LabelVehicle>();  
+		Collections.sort(labelsAtSink);
+		
+		for(LabelVehicle label : labelsAtSink)
+		{
+			if(tripsCovered.isEmpty())
+			{
+				selectedLabels.add(label); 
+				tripsCovered.addAll(label.getUpdatedResources().getUpdatedTrips()); 
+			}
+			else
+			{
+				Set<Trip> tripsInLabel = new HashSet<Trip>(); 
+				tripsInLabel.addAll(label.getUpdatedResources().getUpdatedTrips()); 
+				tripsInLabel.retainAll(tripsCovered); 
+				
+				if(tripsInLabel.size() <= 5)
+				{
+					selectedLabels.add(label); 
+					tripsCovered.addAll(label.getUpdatedResources().getUpdatedTrips()); 
+				}
+			}
+		}
+		
+		return selectedLabels; 
+		
 	}
 	
 	private boolean validateBlock(Block intblock)

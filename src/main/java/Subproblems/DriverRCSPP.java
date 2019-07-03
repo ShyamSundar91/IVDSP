@@ -56,7 +56,7 @@ public class DriverRCSPP
 		this.queue = new ArrayList<DriverVertex>();
 		this.dutiesGenerated = new ArrayList<Duty>(); 
 		this.generateAllVariables = false; 
-		this.heuristic = true; 
+		this.heuristic = false; 
 		
 		initialization(); 
 		

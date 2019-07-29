@@ -23,6 +23,7 @@ public class BetweenTripsOnSameNode
 	private Trip trip2; 
 	private VehicleType vehicleType; 
 	private Set<Deadrun> deadruns; 
+	private Set<IdleTime> idleTimes; 
 	private Set<VehicleTravel> allVehicleTravels; 
 	private Set<Node> allNodes; 
 
@@ -32,34 +33,45 @@ public class BetweenTripsOnSameNode
 	@Getter
 	private List<Deadrun> deadrunsOnArc; 
 	@Getter
-	private List<IdleTime> idleTimes; 
+	private IdleTime idleTimeOnArc; 
 	
-	public BetweenTripsOnSameNode(Trip trip1, Trip trip2, VehicleType vehicleType, Set<Deadrun> deadruns, Set<VehicleTravel> allVehicleTravels, Set<Node> allNodes)
+	public BetweenTripsOnSameNode(Trip trip1, Trip trip2, VehicleType vehicleType, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Set<VehicleTravel> allVehicleTravels, Set<Node> allNodes)
 	{
 		this.trip1 = trip1; 
 		this.trip2 = trip2; 
 		this.vehicleType = vehicleType; 
 		this.deadruns = deadruns; 
+		this.idleTimes = idleTimes; 
 		this.allVehicleTravels = allVehicleTravels; 
 		this.allNodes = allNodes; 
 		
 		this.blockActivitiesOnArc = new ArrayList<BlockActivity>(); 
 		this.deadrunsOnArc = new ArrayList<Deadrun>(); 
-		this.idleTimes = new ArrayList<IdleTime>(); 
+		this.idleTimeOnArc = null; 
 	}
 	
 	public List<BlockActivity> getBlockActivities()
 	{ 
 		int maxIdleTimeAtNode = trip1.getArrivalNode().getMaxIdleTime();
+		int minIdleTimeAtNode = trip1.getArrivalNode().getMinIdleTime(); 
 		
-		if((trip2.getDepartureTime()- trip1.getArrivalTime()) <= maxIdleTimeAtNode) //Could be 0 minutes of idle time
+		if(((trip2.getDepartureTime()- trip1.getArrivalTime()) <= maxIdleTimeAtNode) && ((trip2.getDepartureTime()- trip1.getArrivalTime()) >= minIdleTimeAtNode))
 		{
 			BlockActivity blockActivity = new BlockActivity(trip1.getArrivalNode(), trip2.getDepartureNode(), trip1.getArrivalTime(), trip2.getDepartureTime(), 0, -1 , "Idle"); 
 			this.blockActivitiesOnArc.add(blockActivity); 	 
 			IdleTime idle = new IdleTime(trip1.getArrivalNode(), trip1.getArrivalTime(), trip2.getDepartureTime(), trip1, trip2); 
-			this.idleTimes.add(idle);
+			if(!this.idleTimes.contains(idle))
+			{
+				this.idleTimes.add(idle); 
+				this.idleTimeOnArc = idle; 
+			}
+			else
+			{
+				Optional<IdleTime> existingIdleTime = this.idleTimes.stream().filter(i -> i.equals(idle)).findFirst(); 
+				this.idleTimeOnArc = existingIdleTime.get(); 
+			}
 		}
-		else
+		else if(((trip2.getDepartureTime()- trip1.getArrivalTime()) > maxIdleTimeAtNode))
 		{
 			List<Node> parkingOrRecgargingNodes = new ArrayList<Node>(); 
 			boolean recharging = false; 
@@ -99,7 +111,7 @@ public class BetweenTripsOnSameNode
 					Deadrun deadrun1 = new Deadrun(trip1.getArrivalNode(), bestNode, trip1.getArrivalTime(), endTimeOfTravelToParkRefuel, false, true); 
 					if(!this.deadruns.contains(deadrun1))
 					{
-						this.deadruns.add(deadrun1); 
+						//this.deadruns.add(deadrun1); 
 						this.deadrunsOnArc.add(deadrun1); 
 					}
 					else
@@ -116,7 +128,7 @@ public class BetweenTripsOnSameNode
 					Deadrun deadrun2 = new Deadrun(bestNode, trip2.getDepartureNode(), startTimeOfTravelFromParkRefuel, trip2.getDepartureTime(), true, false); 
 					if(!this.deadruns.contains(deadrun2))
 					{
-						this.deadruns.add(deadrun2); 
+						//this.deadruns.add(deadrun2); 
 						this.deadrunsOnArc.add(deadrun2); 
 					}
 					else
@@ -140,6 +152,16 @@ public class BetweenTripsOnSameNode
 						{
 							BlockActivity rechargeAtNode = new BlockActivity(bestNode, bestNode, endTimeOfTravelToParkRefuel, startTimeOfTravelFromParkRefuel, 0, -1, "Recharging"); 
 							this.blockActivitiesOnArc.add(rechargeAtNode);  
+							
+							if(!this.deadruns.contains(deadrun1))
+							{
+								this.deadruns.add(deadrun1); 
+							}
+							
+							if(!this.deadruns.contains(deadrun2))
+							{
+								this.deadruns.add(deadrun2); 
+							}
 						}
 						else
 						{
@@ -150,7 +172,17 @@ public class BetweenTripsOnSameNode
 					else
 					{
 						BlockActivity parkAtNode = new BlockActivity(bestNode, bestNode, endTimeOfTravelToParkRefuel, startTimeOfTravelFromParkRefuel, 0, -1, "Parking"); 
-						this.blockActivitiesOnArc.add(parkAtNode); 
+						this.blockActivitiesOnArc.add(parkAtNode);
+						
+						if(!this.deadruns.contains(deadrun1))
+						{
+							this.deadruns.add(deadrun1); 
+						}
+						
+						if(!this.deadruns.contains(deadrun2))
+						{
+							this.deadruns.add(deadrun2); 
+						}
 					}
 				}
 				else

@@ -33,16 +33,17 @@ public class VehicleRCSPP
 	@Getter
 	private List<Block> blocksGenerated; 
 	private Map<Trip, Double> dualValuesOfTripIDs; 
-	private List<Trip> tripsToGenerateVariables; 
+	private List<Trip> trips; 
 	
 	private boolean generateAllVariables;
-	private boolean heuristic; 
-	public VehicleRCSPP(VehicleType vehicleType, List<Trip> tripsToGenerateVariables, DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs)
+	private boolean allowedLineChange; 
+	private boolean useSubNetwork; 
+	public VehicleRCSPP(VehicleType vehicleType, List<Trip> trips, DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs, boolean allowedLineChange, boolean useSubNetwork)
 	{
 		this.vehicleType = vehicleType; 
 		this.vehicleGraph = vehicleGraph;  
 		this.dualValuesOfTripIDs = dualValuesOfTripIDs; 
-		this.tripsToGenerateVariables = tripsToGenerateVariables; 
+		this.trips = trips; 
 		
 		this.sourceVertex = this.vehicleGraph.vertexSet().stream().filter(v -> v.getVertexId() == -1).collect(Collectors.toList()).get(0); 
 		this.sinkVertex = this.vehicleGraph.vertexSet().stream().filter(v -> v.getVertexId() == Integer.MAX_VALUE).collect(Collectors.toList()).get(0); 
@@ -55,7 +56,8 @@ public class VehicleRCSPP
 		this.queue = new ArrayList<VehicleVertex>(); 
 		
 		this.generateAllVariables = false; 
-		this.heuristic = false; 
+		this.allowedLineChange = allowedLineChange; 
+		this.useSubNetwork = useSubNetwork; 
 		
 		initialization(); 
 		
@@ -78,9 +80,9 @@ public class VehicleRCSPP
 			
 			Set<VehicleArc> outgoingArcs = this.vehicleGraph.outgoingEdgesOf(selectedVertex).stream().collect(Collectors.toSet()); 
 			
-			if(this.heuristic)
+			if(!this.allowedLineChange && selectedVertex.getTrip() != null)
 			{
-				outgoingArcs = selectArc(outgoingArcs); 
+				outgoingArcs = selectArc(selectedVertex, outgoingArcs); 
 			}
 			
 			for(LabelVehicle label : selectedVertex.getLabels())
@@ -95,7 +97,7 @@ public class VehicleRCSPP
 						VehicleREF newREF = new VehicleREF(this.vehicleType, label.getUpdatedResources(), outgoingArc, successorVertex);  
 						if(newREF.isValid())
 						{
-							if(successorVertex.getVertexId() == Integer.MAX_VALUE && (newREF.getUpdatedReducedCost() < -0.001  || this.generateAllVariables))
+							if(successorVertex.getVertexId() == Integer.MAX_VALUE && (newREF.getUpdatedReducedCost() <= -0.01  || this.generateAllVariables))
 							{
 								LabelVehicle newLabel = new LabelVehicle(newREF, label, selectedVertex, outgoingArc);
 								successorVertex.getLabels().add(newLabel); 
@@ -135,13 +137,13 @@ public class VehicleRCSPP
 		reterievePaths(); 
 	}
 	
-	private Set<VehicleArc> selectArc(Set<VehicleArc> outgoingArcs)
+	private Set<VehicleArc> selectArc(VehicleVertex selectedVertex, Set<VehicleArc> outgoingArcs)
 	{
 		Set<VehicleArc> selectedArc = new HashSet<VehicleArc>(); 
 		
 		for(VehicleArc arc : outgoingArcs)
 		{
-			if(arc.getSuccessorVertex().getTrip() != null && this.tripsToGenerateVariables.contains(arc.getSuccessorVertex().getTrip()))
+			if(arc.getSuccessorVertex().getTrip() != null && arc.getSuccessorVertex().getTrip().getLineNumber() == selectedVertex.getTrip().getLineNumber())
 			{
 				selectedArc.add(arc); 
 			}
@@ -182,15 +184,19 @@ public class VehicleRCSPP
 				/*
 				 * Check if max distance without recharging is dominated
 				 */
-				if(this.vehicleType.getMaximumDistanceWithoutRecharging() > 0)
+				if(!this.useSubNetwork)
 				{
-					boolean dominatedMaxDistanceWithoutRefueling = false; 
-					if(newREF.getUpdatedDistanceWithoutRecharging() >= existingREF.getUpdatedDistanceWithoutRecharging())
+					if(this.vehicleType.getMaximumDistanceWithoutRecharging() > 0)
 					{
-						dominatedMaxDistanceWithoutRefueling = true;
+						boolean dominatedMaxDistanceWithoutRefueling = false; 
+						if(newREF.getUpdatedDistanceWithoutRecharging() >= existingREF.getUpdatedDistanceWithoutRecharging())
+						{
+							dominatedMaxDistanceWithoutRefueling = true;
+						}
+						dominatingDecisions.add(dominatedMaxDistanceWithoutRefueling); 
 					}
-					dominatingDecisions.add(dominatedMaxDistanceWithoutRefueling); 
 				}
+				
 				
 				
 				boolean dominated = true; 
@@ -251,10 +257,18 @@ public class VehicleRCSPP
 		//System.out.println("Final labels = " + labelsAtSink.size());
 		if(labelsAtSink.size() > 500 && !this.generateAllVariables)
 		{
-			//Collections.sort(labelsAtSink);
-			//labelsAtSink = labelsAtSink.subList(0, 500);
+			if(labelsAtSink.size() > 1000 && this.useSubNetwork)
+			{
+				Collections.sort(labelsAtSink);
+				//labelsAtSink = labelsAtSink.subList(0, 1000);
+				labelsAtSink = selectComplementaryColumns(labelsAtSink);
+			}
+			else
+			{
+				Collections.sort(labelsAtSink);
+				labelsAtSink = labelsAtSink.subList(0, 500);
+			}
 			
-			labelsAtSink = selectComplementaryColumns(labelsAtSink); 
 		}
 		
 		List<VehicleVertex> vehicleVertices = new ArrayList<VehicleVertex>();
@@ -263,6 +277,7 @@ public class VehicleRCSPP
 		for(LabelVehicle finalLabel : labelsAtSink)
 		{
 			boolean stop = false; 
+			double totalCost = 0.0; 
 			LabelVehicle currentLabel = finalLabel;
 			vehicleVertices = new ArrayList<VehicleVertex>(); 
 			vehicleArcs = new ArrayList<VehicleArc>();
@@ -272,6 +287,7 @@ public class VehicleRCSPP
 				if(currentVertex.getTrip() != null)
 				{
 					vehicleVertices.add(currentVertex); 
+					totalCost = totalCost + currentVertex.getTotalCostOfVertex(); 
 				}
 				
 				LabelVehicle previousLabel = currentLabel.getSourceLabel(); 
@@ -279,9 +295,9 @@ public class VehicleRCSPP
 				
 				if(previousLabel != null && previousVertex != null)
 				{
-		
 					VehicleArc currentArc = currentLabel.getExtendedVehicleArc(); 
 					vehicleArcs.add(currentArc); 
+					totalCost = totalCost + currentArc.getTotalCostOfArc(); 
 					
 					currentLabel = previousLabel; 
 					currentVertex = previousVertex; 
@@ -293,13 +309,14 @@ public class VehicleRCSPP
 				
 			}
 			
+			
 			List<Trip> trips = new ArrayList<Trip>(); 
 			List<BlockActivity> blockElements = new ArrayList<BlockActivity>(); 
 			List<Deadrun> deadruns = new ArrayList<Deadrun>();
 			List<IdleTime> idleTimes = new ArrayList<IdleTime>(); 
 			vehicleVertices.forEach(v -> {
 				trips.add(v.getTrip());
-				blockElements.add(v.getBlockActivity()); 
+				blockElements.add(v.getBlockActivity());  
 			});
 			
 			Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedTrips().containsAll(trips));
@@ -327,11 +344,12 @@ public class VehicleRCSPP
 			for(IdleTime idleTime : idleTimes)
 			{
 				Optional<BlockActivity> idleActivity = blockElements.stream().filter(b -> b.getDepartureNode().equals(idleTime.getNode()) && b.getArrivalNode().equals(idleTime.getNode()) && b.getDepartureTime() == idleTime.getDepartureTime() && 
-						b.getArrivalTime() == idleTime.getArrivalTime()).findFirst(); 
+						b.getArrivalTime() == idleTime.getArrivalTime()).findFirst();
 				Assert.assertTrue(idleActivity.isPresent());
 			}
 			
 			Block intblock = new Block(this.vehicleType, trips, deadruns, idleTimes, blockElements); 
+			Assert.assertTrue(Math.abs(intblock.getTotalCostOfBlock() - totalCost) <= 1e-6);
 			
 			if(validateBlock(intblock))
 			{

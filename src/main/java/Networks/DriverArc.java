@@ -30,10 +30,12 @@ public class DriverArc implements Comparable<DriverArc>
 	private int durationBeforeBreak; 
 	private int durationAfterBreak;
 	private IdleTime idleTimeOnArc; 
-	private boolean attendingBus; 
+	private boolean attendingBus;
+	private boolean changingBus; 
 	private double reducedCostOfArc; 
+	private double totalCostOfArc; 
 	
-	public DriverArc(DutyType dutyType, DriverVertex predecessorVertex, DriverVertex successorVertex, Trip trip, Deadrun deadrun, List<DutyActivity> dutyActivities, IdleTime idleTimeOnArc, boolean attendingBus) 
+	public DriverArc(DutyType dutyType, DriverVertex predecessorVertex, DriverVertex successorVertex, Trip trip, Deadrun deadrun, List<DutyActivity> dutyActivities, IdleTime idleTimeOnArc, boolean attendingBus, boolean changingBus) 
 	{
 		this.dutyType = dutyType; 
 		this.predecessorVertex = predecessorVertex; 
@@ -44,6 +46,7 @@ public class DriverArc implements Comparable<DriverArc>
 		this.dutyActivities = dutyActivities; 
 		this.idleTimeOnArc = idleTimeOnArc; 
 		this.attendingBus = attendingBus; 
+		this.changingBus = changingBus; 
 		
 		this.startTimeOfBreak = -1; 
 		this.endTimeOfBreak = -1; 
@@ -51,12 +54,19 @@ public class DriverArc implements Comparable<DriverArc>
 		this.durationAfterBreak = 0; 
 		this.durationOfArc = 0; 
 		this.reducedCostOfArc = 0.0; 
+		this.totalCostOfArc = 0.0; 
 		
 		getDuration(); 
 		getBreakActivity(); 
+		
+		this.totalCostOfArc = ((double)this.durationOfArc/(double)60) * this.dutyType.getCostPerHour(); 
+		if(this.predecessorVertex.getCurrentTime() == -1)
+		{
+			this.totalCostOfArc = this.totalCostOfArc + this.dutyType.getFixedCost(); 
+		}
 	}
 	
-	public void calculateReducedCostOfArc(Map<Trip, Double> dualValuesOfTrips, Map<Deadrun, Double> dualValuesOfDeadrunLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, boolean usedFarkas)
+	public void calculateReducedCostOfArc(Map<Trip, Double> dualValuesOfTrips, Map<Deadrun, Double> dualValuesOfDeadrunLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes)
 	{
 		this.reducedCostOfArc = 0.0; 
 		double rhs = 0.0; 
@@ -73,14 +83,8 @@ public class DriverArc implements Comparable<DriverArc>
 			rhs = rhs + dualValuesOfIdleTimes.get(this.idleTimeOnArc); 
 		}
 		
-		if(usedFarkas)
-		{
-			this.reducedCostOfArc = -rhs; 
-		}
-		else
-		{
-			this.reducedCostOfArc = (((double)this.durationOfArc/(double)60) * this.dutyType.getCostPerHour()) - rhs; 
-		}
+		this.reducedCostOfArc = this.totalCostOfArc - rhs; 
+		
 	}
 	
 	private void getDuration()
@@ -107,12 +111,14 @@ public class DriverArc implements Comparable<DriverArc>
 
 	@Override
 	public int compareTo(DriverArc o) 
-	{
+	{	
 		if(this.successorVertex.getCurrentTime() < o.getPredecessorVertex().getCurrentTime()) return -1; 
 		if(this.successorVertex.getCurrentTime() > o.getPredecessorVertex().getCurrentTime()) return 1; 
 		
 		if(this.predecessorVertex.getCurrentTime() < o.getPredecessorVertex().getCurrentTime()) return -1; 
 		if(this.predecessorVertex.getCurrentTime() > o.getPredecessorVertex().getCurrentTime()) return 1; 
+		
+		
 		
 		return 0;
 	}

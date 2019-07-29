@@ -18,6 +18,7 @@ public class VehicleVertex
 	private BlockActivity blockActivity; 
 	private double distance; 
 	private double reducedCost; 
+	private double totalCostOfVertex; 
 	
 	private List<LabelVehicle> labels; 
 	
@@ -26,8 +27,8 @@ public class VehicleVertex
 		this.vertexId = vertexId; 
 		this.trip = trip; 
 		this.vehicleTypeDepot = vehicleTypeDepot; 
-		this.reducedCost = 0; 
-		this.distance = 0; 
+		this.reducedCost = 0.0; 
+		this.distance = 0.0; 
 		this.labels = new ArrayList<LabelVehicle>(); 
 		
 		if(this.trip != null)
@@ -35,30 +36,16 @@ public class VehicleVertex
 			this.blockActivity = new BlockActivity(this.trip.getDepartureNode(), this.trip.getArrivalNode(), this.trip.getDepartureTime(), this.trip.getArrivalTime(), this.trip.getDistance(), this.trip.getTripId(), "Trip"); 
 			this.distance = this.trip.getDistance(); 
 		}
+		
+		this.totalCostOfVertex = this.vehicleTypeDepot.getVehicleType().getCostPerkm()*this.distance; 
 	}
 	
-	public void calculateReducedCostOfSinkVertex(boolean usedFarkas)
-	{
-		if(usedFarkas)
-		{
-			this.reducedCost = 0.0; 
-		}
-		else
-		{
-			this.reducedCost = this.vehicleTypeDepot.getVehicleType().getFixedCost(); 
-		}
-	}
 	
-	public void calculateReducedCostOfVertex(double dualOfTrip, boolean usedFarkas)
+	public void calculateReducedCostOfVertex(double dualOfTrip)
 	{
 		this.reducedCost = 0.0; 
-		if(usedFarkas)
 		{
-			this.reducedCost = - dualOfTrip; 
-		}
-		else
-		{
-			this.reducedCost = (this.vehicleTypeDepot.getVehicleType().getCostPerkm()*this.distance) - dualOfTrip; 
+			this.reducedCost = this.totalCostOfVertex - dualOfTrip; 
 		}
 	}
 

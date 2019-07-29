@@ -50,7 +50,7 @@ public class VehicleTest
 	{
 		for(Block block : this.allBlocks)
 		{
-			IloColumn variable = this.cplex.column(this.cplex.getObjective(), block.getLhs()); 
+			IloColumn variable = this.cplex.column(this.cplex.getObjective(), block.getTotalCostOfBlock()); 
 			
 			for(Trip trip : block.getTripsInBlock())
 			{

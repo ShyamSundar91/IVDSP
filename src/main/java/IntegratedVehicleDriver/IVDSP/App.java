@@ -12,15 +12,18 @@ import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
 
+import ALNS.InitialSolutionController;
+import ALNS.LocalSearch;
+import BranchPriceDriver.BBNodeDriver;
+import BranchPriceIntegratedVehicleDriver.BranchAndBoundIntegrated;
+import BranchPriceVehicle.BranchAndBoundVehicle;
 import Data.DriverTravel;
 import Data.DutyType;
 import Data.Node;
 import Data.Trip;
 import Data.VehicleTravel;
 import Data.VehicleType;
-import InitialSolution.InitialSolutionController;
-import Lagrangian.IVDSPLagrangianCG;
-import Lagrangian.LagrangianSolverIVDSP;
+import InitialSolution.SingleDepotVehicleScheduling;
 import LinearProgramming.IntegratedMasterProblem;
 import Networks.DriverArc;
 import Networks.DriverGraphGeneration;
@@ -41,7 +44,7 @@ public class App
     public static void main( String[] args ) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = "/Users/ShyamSundar/Desktop/BAASVest/";
+    	String inputPath = "/Users/ShyamSundar/Desktop/Integrated vehicle and driver/Data/BAASVestSmall/";
     	ReadInstance rd = new ReadInstance(inputPath); 
     	System.out.println("***********************************************");
     	
@@ -92,62 +95,46 @@ public class App
     	Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs = grpahGen.getVehicleGraphs(); 
     	Set<Deadrun> allDeadruns = grpahGen.getDeadruns();
     	Set<IdleTime> allIdleTimes = grpahGen.getIdleTimes(); 
-    	List<Block> blocksGenerated = new ArrayList<Block>();  //grpahGen.getBlocksGenerated(); 
-    	System.out.println("***********************************************");
-    	
-    	DriverGraphGeneration driverGraphgen = new DriverGraphGeneration(allDutyTypeDepots, allDriverTravels, allTrips, allDeadruns, vehicleGraphs); 
-    	Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs = driverGraphgen.getDriverGraphs(); 
-    	List<Duty> dutiesGenerated = new ArrayList<Duty>();  //driverGraphgen.getDutiesGenerated(); 
-    	System.out.println("***********************************************");
-    	/*for(Trip trip : allTrips)
+    	Map<Block, Integer> blocksGenerated = new HashMap<Block, Integer>(); //grpahGen.getBlocksGenerated(); 
+    	System.out.println("Number of deadheads = " + allDeadruns.size());
+    	/*for(Deadrun deadrun : allDeadruns)
     	{
-    		System.out.println(trip.getTripId() + "; " + trip.getDepartureNode().getNodeId() + "; " + trip.getArrivalNode().getNodeId() + "; " + trip.getDepartureTime() + "; " + trip.getArrivalTime());
-    	}
-    	
-    	System.out.println("***********************************************");
-    	System.out.println("Number of deadruns = " + allDeadruns.size());
-    	for(Deadrun deadrun : allDeadruns)
-    	{
-    		System.out.println(deadrun.getDeadrunId() + "; " + deadrun.getDepartureNode().getNodeId() + "; " + deadrun.getArrivalNode().getNodeId() + "; " + deadrun.getDepartureTime() + "; " + deadrun.getArrivalTime() + "; " + deadrun.getType());
-    	}
-    	
-    	System.out.println("***********************************************");
-    	System.out.println("Number of idle times = " + allIdleTimes.size());
-    	for(IdleTime idleTime : allIdleTimes)
+    		System.out.println(deadrun.getDeadrunId() + "; " + deadrun.getDepartureNode().getNodeId() + "; " + deadrun.getArrivalNode().getNodeId() + "; " + deadrun.getDepartureTime() + "; " + deadrun.getArrivalTime());
+    	}*/
+    	System.out.println("Number of idle time = " + allIdleTimes.size());
+    	/*for(IdleTime idleTime : allIdleTimes)
     	{
     		System.out.println(idleTime.getNode().getNodeId() + "; " + idleTime.getDepartureTime() + "; " + idleTime.getArrivalTime());
-    	}
+    	}*/
+    	System.out.println("***********************************************");
     	
-    	System.out.println("***********************************************");*/
+    	DriverGraphGeneration driverGraphgen = new DriverGraphGeneration(allDutyTypeDepots, allDriverTravels, allNodes, allTrips, allDeadruns, vehicleGraphs); 
+    	Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs = driverGraphgen.getDriverGraphs(); 
+    	Map<Duty, Integer> dutiesGenerated = new HashMap<Duty, Integer>(); // driverGraphgen.getDutiesGenerated(); 
+    	System.out.println("***********************************************");
     	
-    	//InitialSolutionController inSol = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
-    	
-    	/*Map<Trip, Double> tripVehicleMultiplier = new HashMap<Trip, Double>(); 
-    	Map<Trip, Double> tripDriverMultiplier = new HashMap<Trip, Double>(); 
-    	Map<Deadrun, Double> deadrunLowerLimitMultiplier = new HashMap<Deadrun, Double>(); 
-    	Map<Deadrun, Double> deadrunUpperLimitMultiplier = new HashMap<Deadrun, Double>();
-    	Map<IdleTime, Double> idleTimeMultiplier = new HashMap<IdleTime, Double>(); 
-    	allTrips.forEach(t -> {
-    		tripVehicleMultiplier.put(t, 0.0); 
-    		tripDriverMultiplier.put(t, 0.0); 
-    	});
-    	allDeadruns.forEach(d -> {
-    		deadrunLowerLimitMultiplier.put(d, 0.0); 
-    		deadrunUpperLimitMultiplier.put(d, 0.0); 
-    	});
-    	allIdleTimes.forEach(i -> {
-    		idleTimeMultiplier.put(i, 0.0); 
-    	});
-    	
-    	*/
     	long start = System.currentTimeMillis(); 
-    	/*IVDSPLagrangianCG  lag = new IVDSPLagrangianCG (allTrips, allDeadruns, allIdleTimes, vehicleGraphs, driverGraphs); 
-    	List<Block> blocksGenerated = lag.getBlocksGenerated(); 
-    	List<Duty> dutiesGenerated = lag.getDutiesGenerated(); */
+    	InitialSolutionController initial = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
+    	LocalSearch localSearch = new LocalSearch(allTrips, vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj()); 
+    	//blocksGenerated.addAll(initial.getBlocksInSolution()); 
+    	//dutiesGenerated.addAll(initial.getDutiesInSolution()); 
+    	Set<Deadrun> deadrunsInSolution = new HashSet<Deadrun>(); 
+    	Set<IdleTime> idleTimesInSolution = new HashSet<IdleTime>(); 
+    	/*for(Block block : blocksGenerated)
+    	{
+    		deadrunsInSolution.addAll(block.getDeadrunsInBlock()); 
+    		idleTimesInSolution.addAll(block.getIdleTimesInBlock()); 
+    	}*/
+    	//IntegratedMasterProblem imp = new IntegratedMasterProblem(allTrips, deadrunsInSolution, idleTimesInSolution,/*allDeadruns, allIdleTimes,*/ vehicleGraphs, driverGraphs, blocksGenerated, dutiesGenerated, true); 
+    	//BranchAndBoundIntegrated bb = new BranchAndBoundIntegrated(allTrips, blocksGenerated, dutiesGenerated, deadrunsInSolution, idleTimesInSolution, vehicleGraphs, driverGraphs, true); 
     	
-    	IntegratedMasterProblem mp = new IntegratedMasterProblem(allTrips, allDeadruns, allIdleTimes, vehicleGraphs, driverGraphs,  blocksGenerated, dutiesGenerated);
+    	
+    	//SequentialApproach seq = new SequentialApproach(allTrips, vehicleGraphs, driverGraphs); 
     	long end = System.currentTimeMillis(); 
-    	System.out.println((end - start)/ 1000.00);
- 
+    	System.out.println("Total time = " + (double)(end-start)/1000.00);
+    
+    	
+    	
+    	
     }
 }

@@ -57,7 +57,7 @@ public class VehicleGraphGeneration
 		{
 			VehicleGraph graph = new VehicleGraph(vehicleTypeDepot, this.allTrips,  this.allVehicleTravels, this.allNodes, this.deadruns, this.idleTimes); 
 			this.vehicleGraphs.put(vehicleTypeDepot, graph.getVehicleGraph()); 
-			//System.out.println("Graph " + vehicleTypeDepot.getDescription() + ", vertices " + graph.getVehicleGraph().vertexSet().size() + ", edges " + graph.getVehicleGraph().edgeSet().size());
+			System.out.println("Vehicle Graph " + vehicleTypeDepot.getDescription() + ", vertices " + graph.getVehicleGraph().vertexSet().size() + ", edges " + graph.getVehicleGraph().edgeSet().size());
 			/*for(VehicleArc arc : graph.getVehicleGraph().edgeSet())
 			{
 				System.out.println(arc.getPredecessorVertex().getVertexId() + " -----> " + arc.getSuccessorVertex().getVertexId());
@@ -68,18 +68,19 @@ public class VehicleGraphGeneration
 				System.out.println("********************");
 			}*/
 			
-			/*VehicleRCSPP rcspp = new VehicleRCSPP(vehicleTypeDepot.getVehicleType(), graph.getVehicleGraph(), new HashMap<Trip, Double>()); 
+			/*VehicleRCSPP rcspp = new VehicleRCSPP(vehicleTypeDepot.getVehicleType(), this.allTrips,  graph.getVehicleGraph(), new HashMap<Trip, Double>(), true); 
 			blocksGenerated = rcspp .getBlocksGenerated(); 
-			for(Block block : blocksGenerated)
+			System.out.println("Number of blocks generated = " + blocksGenerated.size());
+			/*for(Block block : blocksGenerated)
 			{
 				for(BlockActivity ba : block.getBlockActivities())
 				{
 					System.out.println(block.getBlockId() + "; " + block.getDistance() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
 				}
-			}
-			System.out.println("Number of blocks generated = " + blocksGenerated.size());
+			}*/
 			
-			VehicleTest test = new VehicleTest(blocksGenerated, this.allTrips); */
+			
+			//VehicleTest test = new VehicleTest(blocksGenerated, this.allTrips); */
 			
 			//QuasiAssignmentFormulation qaf = new QuasiAssignmentFormulation(this.allTrips, graph.getVehicleGraph()); 
 		}

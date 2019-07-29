@@ -13,12 +13,13 @@ import lombok.Getter;
 @Getter
 public class ActivtiesWhileAttendingBus 
 {
-	public Node node; 
-	public int departureTime;
-	public int arrivalTime; 
-	public DutyType dutyType; 
-	public List<DutyActivity> dutyActivities; 
+	private Node node; 
+	private int departureTime;
+	private int arrivalTime; 
+	private DutyType dutyType; 
+	private List<DutyActivity> dutyActivities; 
 	private BlockActivity blockActivity; 
+	private boolean addArc; 
 	public ActivtiesWhileAttendingBus(Node node, int departureTime, int arrivalTime, DutyType dutyType, List<BlockActivity> blockActivites)
 	{
 		this.node = node; 
@@ -26,6 +27,7 @@ public class ActivtiesWhileAttendingBus
 		this.arrivalTime = arrivalTime; 
 		this.dutyType = dutyType; 
 		this.dutyActivities = new ArrayList<DutyActivity>();
+		this.addArc = true; 
 		
 		Optional<BlockActivity> bb = blockActivites.stream().filter(b -> b.getDepartureNode().equals(this.node) && b.getArrivalNode().equals(this.node) && b.getDepartureTime() == this.departureTime && 
 				b.getArrivalTime() == this.arrivalTime).findFirst();
@@ -38,15 +40,12 @@ public class ActivtiesWhileAttendingBus
 		{
 			throw new IllegalArgumentException();
 		}
-			
-		 
-		
 		
 	}
 	
 	private void fillActivities()
 	{
-		if(this.blockActivity.getActivity().equals("Idle") || this.blockActivity.getActivity().equals("Parking") || this.blockActivity.getActivity().equals("Recharging"))
+		if(this.blockActivity.getActivity().equals("Idle") /*|| this.blockActivity.getActivity().equals("Parking") || this.blockActivity.getActivity().equals("Recharging")*/)
 		{
 			int duration = this.arrivalTime - this.departureTime; 
 			if(node.isDriverBreakAllowed() &&  duration >= this.dutyType.getMinimumBreakDuration())
@@ -60,7 +59,11 @@ public class ActivtiesWhileAttendingBus
 				this.dutyActivities.add(regulation); 
 			}
 		}
-		else
+		else if(this.blockActivity.getActivity().equals("Parking") || this.blockActivity.getActivity().equals("Recharging"))
+		{
+			this.addArc = false; 
+		}
+		else 
 		{
 			 throw new IllegalArgumentException();
 		}

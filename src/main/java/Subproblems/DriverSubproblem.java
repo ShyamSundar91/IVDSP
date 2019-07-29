@@ -25,13 +25,14 @@ public class DriverSubproblem
 	private Map<IdleTime, Double> dualValuesOfIdleTimes;
 	private List<Trip> tripsInSolution; 
 	private List<Deadrun> deadrunsInSolution; 
-	private List<IdleTime> idleTimesInSolution;
-	private boolean usedFarkas; 
+	private List<IdleTime> idleTimesInSolution; 
+	private boolean allowBlockChange;
+	private boolean useSubNetwork; 
 	@Getter
 	private List<Duty> dutiesGenerated; 
 
 	public DriverSubproblem(int globalIterationNumber, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes,
-			List<Trip> tripsInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution, boolean usedFarkas)
+			List<Trip> tripsInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution, boolean allowBlockChange, boolean useSubNetwork)
 	{
 		this.globalIterationNumber = globalIterationNumber;  
 		this.driverGraphs = driverGraphs; 
@@ -41,8 +42,9 @@ public class DriverSubproblem
 		this.dualValuesOfIdleTimes = dualValuesOfIdleTimes; 
 		this.tripsInSolution = tripsInSolution; 
 		this.deadrunsInSolution = deadrunsInSolution; 
-		this.idleTimesInSolution = idleTimesInSolution; 
-		this.usedFarkas = usedFarkas; 
+		this.idleTimesInSolution = idleTimesInSolution;  
+		this.allowBlockChange = allowBlockChange;
+		this.useSubNetwork = useSubNetwork; 
 		
 		chooseSubproblem(); 
 	}
@@ -85,7 +87,7 @@ public class DriverSubproblem
 		
 		for(DriverArc driverArc : this.driverGraphs.get(chosenSubproblem).edgeSet())
 		{
-			driverArc.calculateReducedCostOfArc(this.dualValuesOfTripIDs, this.dualValuesOfDeadrunsLowerLimit, this.dualValuesOfDeadrunsUpperLimit, this.dualValuesOfIdleTimes, this.usedFarkas);
+			driverArc.calculateReducedCostOfArc(this.dualValuesOfTripIDs, this.dualValuesOfDeadrunsLowerLimit, this.dualValuesOfDeadrunsUpperLimit, this.dualValuesOfIdleTimes);
 		}
 		
 		for(DriverVertex vertex : this.driverGraphs.get(chosenSubproblem).vertexSet())
@@ -93,7 +95,7 @@ public class DriverSubproblem
 			vertex.getLabels().clear();
 		}
 		
-		DriverRCSPP rcspp = new DriverRCSPP(chosenSubproblem.getDutyType(), this.driverGraphs.get(chosenSubproblem), this.tripsInSolution, this.deadrunsInSolution, this.idleTimesInSolution); 
+		DriverRCSPP rcspp = new DriverRCSPP(chosenSubproblem.getDutyType(), this.driverGraphs.get(chosenSubproblem), this.dualValuesOfTripIDs, this.dualValuesOfDeadrunsLowerLimit, this.dualValuesOfDeadrunsUpperLimit, this.dualValuesOfIdleTimes, this.tripsInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.allowBlockChange, this.useSubNetwork); 
 		this.dutiesGenerated = rcspp.getDutiesGenerated(); 
 		System.out.println("Number of duties generated " + this.dutiesGenerated.size());
 	}

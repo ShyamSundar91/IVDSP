@@ -1,0 +1,107 @@
+package BranchPriceDriver;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.jgrapht.graph.DefaultDirectedGraph;
+
+import Data.Trip;
+import Networks.DriverArc;
+import Networks.DriverVertex;
+import Networks.DutyTypeDepot;
+import Variables.Block;
+import Variables.Deadrun;
+import Variables.Duty;
+import Variables.DutyActivity;
+import Variables.IdleTime;
+import ilog.concert.IloException;
+import lombok.Getter;
+
+public class BranchAndBoundDriver 
+{
+	private List<Trip> trips; 
+	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
+	private Map<Duty, Integer> initialAndDutiesGenerated;
+	private List<Block> blocksInSolution; 
+	private List<Deadrun> deadrunsInSolution; 
+	private List<IdleTime> idleTimesInSolution; 
+	private boolean earlyTermination;
+	@Getter
+	private List<Duty> dutiesGenerated; 
+	@Getter
+	private List<Duty> dutiesInSolution; 
+	private List<BBNodeDriver> nodes; 
+	private Map<Integer, Double> lpObjectivesAtEachNode; 
+	public BranchAndBoundDriver(List<Trip> trips, List<Block> blocksInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Duty, Integer> initialAndDutiesGenerated, boolean earlyTermination) throws IloException
+	{
+		this.trips = trips; 
+		this.driverGraphs = driverGraphs; 
+		this.deadrunsInSolution = deadrunsInSolution; 
+		this.idleTimesInSolution = idleTimesInSolution; 
+		this.initialAndDutiesGenerated = initialAndDutiesGenerated; 
+		this.earlyTermination = earlyTermination; 
+		
+		this.dutiesGenerated = new ArrayList<Duty>(); 
+		this.nodes = new ArrayList<BBNodeDriver>();
+		this.lpObjectivesAtEachNode = new HashMap<Integer, Double>(); 
+		
+		createRootNode(); 
+		algorithm(); 
+	}
+	
+	private void createRootNode() throws IloException
+	{
+		BBNodeDriver rootNode = new BBNodeDriver(this.trips, this.blocksInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.driverGraphs, this.initialAndDutiesGenerated, this.earlyTermination); 
+		this.nodes.add(rootNode); 
+	}
+	
+	private void algorithm() throws IloException
+	{
+		int nodeNo = 0; 
+		while(!this.nodes.isEmpty())
+		{
+			System.out.println("Node number = " + nodeNo);
+			long start = System.currentTimeMillis(); 
+			BBNodeDriver currentNode = this.nodes.get(0); 
+			currentNode.solveCG();
+			this.lpObjectivesAtEachNode.put(nodeNo, currentNode.getLpObjective()); 
+			long end = System.currentTimeMillis(); 
+			if(nodeNo == 0)
+			{
+				System.out.println("Time taken at root node = " + (double)(end-start)/1000.00);
+			}
+			if(!currentNode.isSolutionInteger())
+			{
+				BranchingDecisionDriver branchingDecision = new BranchingDecisionDriver(currentNode);
+				BBNodeDriver childNode = branchingDecision.getChildNode(); 
+				this.nodes.add(childNode); 
+			}
+			else
+			{
+				this.dutiesInSolution = currentNode.getDutiesInSolution();  
+			}
+			
+			this.dutiesGenerated.clear();
+			this.dutiesGenerated.addAll(currentNode.getDutyVariables().keySet()); 
+			this.nodes.remove(currentNode);
+			nodeNo++; 
+		}
+		
+		for(Duty duty : this.dutiesInSolution)
+		{
+			for(DutyActivity da : duty.getDutyActivities())
+			{
+				System.out.println(duty.getDutyId() + "; " + duty.getTotalDuration() + "; " + duty.getTotalCostOfDuty() + "; " + da.getDepartureNode().getNodeId() + "; " + da.getArrivalNode().getNodeId() + "; " + da.getDepartureTime() + "; " + da.getArrivalTime() + "; " + da.getActivity() + "; " + da.getTripOrDeadrunId());
+			} 
+		}
+		
+		for(Integer node : this.lpObjectivesAtEachNode.keySet())
+		{
+			System.out.println(node + "; " + this.lpObjectivesAtEachNode.get(node));
+		}
+		
+	}
+
+}

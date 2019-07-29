@@ -71,12 +71,13 @@ public class ReadInstance
 		{
 			int nodeId = Integer.parseInt(record.get(0)); 
 			boolean depot = Boolean.parseBoolean(record.get(1));
-			int maxIdleTime = Integer.parseInt(record.get(2)); 
-			boolean dutySignOnAllowed = Boolean.parseBoolean(record.get(3)); 
-			boolean driverChangeAllowed = Boolean.parseBoolean(record.get(4)); 
-			boolean driverBreakAllowed = Boolean.parseBoolean(record.get(5)); 
+			int minIdleTime = Integer.parseInt(record.get(2)); 
+			int maxIdleTime = Integer.parseInt(record.get(3)); 
+			boolean dutySignOnAllowed = Boolean.parseBoolean(record.get(4)); 
+			boolean driverChangeAllowed = Boolean.parseBoolean(record.get(5)); 
+			boolean driverBreakAllowed = Boolean.parseBoolean(record.get(6)); 
 			
-			Node node = new Node(nodeId, depot, maxIdleTime, dutySignOnAllowed, driverChangeAllowed, driverBreakAllowed); 
+			Node node = new Node(nodeId, depot, minIdleTime, maxIdleTime, dutySignOnAllowed, driverChangeAllowed, driverBreakAllowed); 
 			this.allNodes.add(node); 
 		}
 		
@@ -242,13 +243,15 @@ public class ReadInstance
 		for(List<String> record : records)
 		{
 			String dutyTypeId = record.get(0); 
-			double costPerHour = Double.parseDouble(record.get(1)); 
-			int maxDuration = Integer.parseInt(record.get(2)); 
-			int minPaidTime = Integer.parseInt(record.get(3)); 
-			int minBreakTime = Integer.parseInt(record.get(4));
-			int maxDurationWithoutBreak = Integer.parseInt(record.get(5));
+			double fixedCost = Double.parseDouble(record.get(1)); 
+			double costPerHour = Double.parseDouble(record.get(2)); 
+			int maxDuration = Integer.parseInt(record.get(3)); 
+			int minPaidTime = Integer.parseInt(record.get(4)); 
+			int minBreakTime = Integer.parseInt(record.get(5));
+			int maxDurationWithoutBreak = Integer.parseInt(record.get(6));
+			int maxNumberOfBlockChanges = Integer.parseInt(record.get(7));
 			
-			DutyType dutyType = new DutyType(dutyTypeId, costPerHour, maxDuration, minPaidTime, minBreakTime, maxDurationWithoutBreak);
+			DutyType dutyType = new DutyType(dutyTypeId, fixedCost, costPerHour, maxDuration, minPaidTime, minBreakTime, maxDurationWithoutBreak, maxNumberOfBlockChanges);
 			this.allDutyTypes.add(dutyType); 
 			
 		}

@@ -25,6 +25,7 @@ public class VehicleArc
 	private IdleTime idleTimeOnArc; 
 	private double totalDistance; 
 	private double reducedCostOfArc;
+	private double totalCostOfArc; 
 	
 	private int startTimeOfReCharging;
 	private int endTimeOfReCharging; 
@@ -40,19 +41,23 @@ public class VehicleArc
 		this.idleTimeOnArc = idleTimeOnArc; 
 		this.blockActivitiesOnEdge = blockActivitiesOnEdge; 
 		
-		this.totalDistance = 0; 
-		this.reducedCostOfArc = 0; 
+		this.totalDistance = 0.0; 
+		this.reducedCostOfArc = 0.0; 
+		this.totalCostOfArc = 0.0; 
 		
 		this.startTimeOfReCharging = -1; 
 		this.endTimeOfReCharging = -1; 
 		this.distancedCoveredBeforeReCharging = -1; 
 		this.distanceCoveredAfterReCharging = -1; 
-		
-		this.reducedCostOfArc = 0; 
-		
+		Assert.assertTrue(this.deadrunsOnEdge.size() <= 2);
 		calculateTotalDistance(); 
-		//calculateReducedCostOfArc(); 
 		checkRefueling(); 
+		
+		this.totalCostOfArc = this.totalDistance * this.vehicleTypeDepot.getVehicleType().getCostPerkm(); 
+		if(this.predecessorVertex.getTrip() == null)
+		{
+			this.totalCostOfArc = this.totalCostOfArc + this.vehicleTypeDepot.getVehicleType().getFixedCost(); 
+		}
 	}
 	
 	private void calculateTotalDistance()
@@ -60,7 +65,7 @@ public class VehicleArc
 		this.totalDistance = this.blockActivitiesOnEdge.stream().mapToDouble(b -> b.getDistance()).sum(); 
 	}
 	
-	public void calculateReducedCostOfArc(Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, boolean usedFarkas)
+	public void calculateReducedCostOfArc(Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes)
 	{
 		this.reducedCostOfArc = 0.0; 
 		double rhs = 0.0; 
@@ -68,24 +73,23 @@ public class VehicleArc
 		{
 			for(Deadrun deadrunOnEdge : this.deadrunsOnEdge)
 			{
-				rhs = rhs - dualValuesOfDeadrunsLowerLimit.get(deadrunOnEdge); 
-				rhs = rhs -(2 * dualValuesOfDeadrunsUpperLimit.get(deadrunOnEdge)); 
+				if(dualValuesOfDeadrunsLowerLimit.containsKey(deadrunOnEdge))
+				{
+					rhs = rhs - dualValuesOfDeadrunsLowerLimit.get(deadrunOnEdge); 
+					rhs = rhs -(2 * dualValuesOfDeadrunsUpperLimit.get(deadrunOnEdge));
+				} 
 			}
 		}
 		
 		if(this.idleTimeOnArc != null && !dualValuesOfIdleTimes.isEmpty())
 		{
-			rhs = rhs - dualValuesOfIdleTimes.get(this.idleTimeOnArc); 
+			if(dualValuesOfIdleTimes.containsKey(this.idleTimeOnArc))
+			{
+				rhs = rhs - dualValuesOfIdleTimes.get(this.idleTimeOnArc); 
+			}	
 		}
 		
-		if(usedFarkas)
-		{
-			this.reducedCostOfArc = -rhs; 
-		}
-		else
-		{
-			this.reducedCostOfArc = (this.totalDistance * this.vehicleTypeDepot.getVehicleType().getCostPerkm()) - rhs; 
-		}
+		this.reducedCostOfArc = this.totalCostOfArc - rhs; 
 		
 	}
 	
@@ -122,7 +126,7 @@ public class VehicleArc
 				}
 			}
 			
-			Assert.assertTrue((this.distanceCoveredAfterReCharging + this.distancedCoveredBeforeReCharging) == this.totalDistance);
+			Assert.assertTrue(Math.abs((this.distanceCoveredAfterReCharging + this.distancedCoveredBeforeReCharging)-this.totalDistance) <= 1e-6);
 		}
 	}
 	

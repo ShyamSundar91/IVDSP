@@ -1,8 +1,13 @@
 package Subproblems;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import Data.DutyType;
+import Data.Trip;
 import Networks.DriverArc;
-import Networks.DriverVertex;
+import Variables.Deadrun;
+import Variables.IdleTime;
 import lombok.Getter;
 
 @Getter
@@ -11,18 +16,23 @@ public class DriverREF
 	private DutyType dutyType; 
 	private DriverREF previousREF; 
 	private DriverArc extendingArc; 
-	private DriverVertex succeedingVertex; 
+	private int maxNumberOfBlockChanges; 
 	
 	private boolean attendedBus; 
 	private double updatedReducedCost; 
 	private int updatedTotalDuration; 
 	private int updatedDurationWithoutBreak; 
+	private int updatedNumberOfBlockChanges; 
+	private List<Trip> updatedTrips; 
+	private List<Deadrun> updatedDeadruns; 
+	private List<IdleTime> updatedIdleTimes; 
 	
-	public DriverREF(DutyType dutyType, DriverREF previousREF, DriverArc extendingArc)
+	public DriverREF(DutyType dutyType, DriverREF previousREF, DriverArc extendingArc, int maxNumberOfBlockChanges)
 	{
 		this.dutyType = dutyType; 
 		this.previousREF = previousREF; 
 		this.extendingArc = extendingArc;
+		this.maxNumberOfBlockChanges = maxNumberOfBlockChanges; 
 		
 		if(this.previousREF == null)
 		{
@@ -32,6 +42,9 @@ public class DriverREF
 		{
 			updateAttendedBus(); 
 			updateReducedCost(); 
+			updateTrips(); 
+			updateDeadruns(); 
+			updateIdleTimes(); 
 		}
 	}
 	
@@ -40,7 +53,50 @@ public class DriverREF
 		this.updatedReducedCost = 0.0; 
 		this.updatedTotalDuration = 0; 
 		this.updatedDurationWithoutBreak = 0;
+		this.updatedNumberOfBlockChanges = 0; 
 		this.attendedBus = true;
+		this.updatedTrips = new ArrayList<Trip>(); 
+		this.updatedDeadruns = new ArrayList<Deadrun>(); 
+		this.updatedIdleTimes = new ArrayList<IdleTime>(); 
+	}
+	
+	private void updateTrips()
+	{
+		this.updatedTrips = new ArrayList<Trip>(); 
+		if(previousREF != null)
+		{
+			this.updatedTrips.addAll(previousREF.getUpdatedTrips()); 
+			if(this.extendingArc.getTrip() != null)
+			{
+				this.updatedTrips.add(this.extendingArc.getTrip()); 
+			}
+		}
+	}
+	
+	private void updateDeadruns()
+	{
+		this.updatedDeadruns = new ArrayList<Deadrun>(); 
+		if(this.previousREF != null)
+		{
+			this.updatedDeadruns.addAll(this.previousREF.getUpdatedDeadruns()); 
+			if(this.extendingArc.getDeadrun() != null)
+			{
+				this.updatedDeadruns.add(this.extendingArc.getDeadrun()); 
+			}
+		}
+	}
+	
+	private void updateIdleTimes()
+	{
+		this.updatedIdleTimes = new ArrayList<IdleTime>(); 
+		if(this.previousREF != null)
+		{
+			this.updatedIdleTimes.addAll(this.previousREF.getUpdatedIdleTimes()); 
+			if(this.extendingArc.getIdleTimeOnArc() != null)
+			{
+				this.updatedIdleTimes.add(this.extendingArc.getIdleTimeOnArc()); 
+			}
+		}
 	}
 	
 	private void updateAttendedBus()
@@ -53,6 +109,12 @@ public class DriverREF
 		this.updatedReducedCost = this.previousREF.getUpdatedReducedCost() + this.extendingArc.getReducedCostOfArc(); 
 	}
 	
+	public void updatedReducedCostWithRespectToMinPaidTime(double redCost)
+	{
+		this.updatedReducedCost = redCost; 
+	}
+	
+	
 	public boolean isValid()
 	{
 		if(!checkMaxDuration())
@@ -61,6 +123,11 @@ public class DriverREF
 		}
 		
 		if(!checkMaxDurationWithoutBreak())
+		{
+			return false; 
+		}
+		
+		if(!checkMaxNumberOfBlockChanges())
 		{
 			return false; 
 		}
@@ -109,6 +176,20 @@ public class DriverREF
 		return true; 
 	}
 	
-	
-
+	private boolean checkMaxNumberOfBlockChanges()
+	{
+		this.updatedNumberOfBlockChanges = this.previousREF.getUpdatedNumberOfBlockChanges(); 
+		
+		if(this.extendingArc.isChangingBus())
+		{
+			this.updatedNumberOfBlockChanges = this.updatedNumberOfBlockChanges + 1; 
+		}
+		
+		if(this.updatedNumberOfBlockChanges > this.maxNumberOfBlockChanges /*this.dutyType.getMaximumNumberOfBlockChanges()*/)
+		{
+			return false; 
+		}
+		
+		return true; 
+	}
 }

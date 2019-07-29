@@ -27,9 +27,9 @@ public class VehicleSubproblem
 	@Getter
 	private List<Block> blocksGenerated; 
 
-	private boolean usedFarkas; 
-	public VehicleSubproblem(int globalIterationNumber, List<Trip> tripsToGenerateVariables, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, 
-			boolean usedFarkas)
+	private boolean allowLineChange; 
+	private boolean useSubNetwork; 
+	public VehicleSubproblem(int globalIterationNumber, List<Trip> tripsToGenerateVariables, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, boolean allowLineChange, boolean useSubNetwork)
 	{
 		this.globalIterationNumber = globalIterationNumber;  
 		this.tripsToGenerateVariables = tripsToGenerateVariables; 
@@ -37,8 +37,9 @@ public class VehicleSubproblem
 		this.dualValuesOfTripIDs = dualValuesOfTripIDs; 
 		this.dualValuesOfDeadrunsLowerLimit = dualValuesOfDeadrunsLowerLimit; 
 		this.dualValuesOfDeadrunsUpperLimit = dualValuesOfDeadrunsUpperLimit; 
-		this.dualValuesOfIdleTimes = dualValuesOfIdleTimes; 
-		this.usedFarkas = usedFarkas; 
+		this.dualValuesOfIdleTimes = dualValuesOfIdleTimes;  
+		this.allowLineChange = allowLineChange; 
+		this.useSubNetwork = useSubNetwork; 
 		
 		chooseSubproblem(); 
 	}
@@ -78,17 +79,14 @@ public class VehicleSubproblem
 		{
 			if(this.dualValuesOfTripIDs.containsKey(tripVertex.getTrip()))
 			{
-				tripVertex.calculateReducedCostOfVertex(this.dualValuesOfTripIDs.get(tripVertex.getTrip()), this.usedFarkas);
+				tripVertex.calculateReducedCostOfVertex(this.dualValuesOfTripIDs.get(tripVertex.getTrip()));
 			}
 			
 		}
 		
-		VehicleVertex sinkVertex = this.vehicleGraphs.get(chosenSubproblem).vertexSet().stream().filter(v -> v.getVertexId() == Integer.MAX_VALUE).findFirst().get(); 
-		sinkVertex.calculateReducedCostOfSinkVertex(this.usedFarkas);
-		
 		for(VehicleArc vehicleArc : this.vehicleGraphs.get(chosenSubproblem).edgeSet())
 		{
-			vehicleArc.calculateReducedCostOfArc(this.dualValuesOfDeadrunsLowerLimit, this.dualValuesOfDeadrunsUpperLimit, this.dualValuesOfIdleTimes, this.usedFarkas);
+			vehicleArc.calculateReducedCostOfArc(this.dualValuesOfDeadrunsLowerLimit, this.dualValuesOfDeadrunsUpperLimit, this.dualValuesOfIdleTimes);
 		}
 		
 		for(VehicleVertex vertex : this.vehicleGraphs.get(chosenSubproblem).vertexSet())
@@ -96,7 +94,7 @@ public class VehicleSubproblem
 			vertex.getLabels().clear();
 		}
 		
-		VehicleRCSPP rcspp = new VehicleRCSPP(chosenSubproblem.getVehicleType(), this.tripsToGenerateVariables, this.vehicleGraphs.get(chosenSubproblem), dualValuesOfTripIDs); 
+		VehicleRCSPP rcspp = new VehicleRCSPP(chosenSubproblem.getVehicleType(), this.tripsToGenerateVariables, this.vehicleGraphs.get(chosenSubproblem), dualValuesOfTripIDs, this.allowLineChange, this.useSubNetwork); 
 		this.blocksGenerated = rcspp.getBlocksGenerated(); 
 		System.out.println("Number of blocks generated " + this.blocksGenerated.size());
 	}

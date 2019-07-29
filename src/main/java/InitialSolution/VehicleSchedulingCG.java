@@ -43,6 +43,8 @@ public class VehicleSchedulingCG
 	private List<Deadrun> deadrunsInSolution; 
 	@Getter
 	private List<IdleTime> idleTimesInSolution; 
+	@Getter
+	private List<Block> blocksGenerated; 
 	
 	public VehicleSchedulingCG(int lineNumber, List<Trip> tripsInLine, VehicleTypeDepot vehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph) throws IloException
 	{
@@ -54,6 +56,7 @@ public class VehicleSchedulingCG
 		this.blocksInSolution = new ArrayList<Block>(); 
 		this.deadrunsInSolution = new ArrayList<Deadrun>(); 
 		this.idleTimesInSolution = new ArrayList<IdleTime>(); 
+		this.blocksGenerated = new ArrayList<Block>(); 
 		
 		this.cplex = new IloCplex(); 
 		this.cplex.addMinimize();
@@ -63,6 +66,7 @@ public class VehicleSchedulingCG
 		
 		columnGeneration(); 
 		solveAsMIP(); 
+		this.blocksGenerated.addAll(this.blockVariables.keySet()); 
 	}
 	
 	private void columnGeneration() throws IloException
@@ -92,7 +96,7 @@ public class VehicleSchedulingCG
 				
 				List<Block> blocksGenerated = new ArrayList<Block>(); 
 				
-				VehicleSubproblem sub = new VehicleSubproblem(iter,this.tripsInLine, this.vehicleGraph, tripsVehicleDual, new HashMap<Deadrun, Double>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), false); 
+				VehicleSubproblem sub = new VehicleSubproblem(iter,this.tripsInLine, this.vehicleGraph, tripsVehicleDual, new HashMap<Deadrun, Double>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), true, false); 
 				blocksGenerated.addAll(sub.getBlocksGenerated()); 
 				
 				if(!blocksGenerated.isEmpty())
@@ -178,7 +182,7 @@ public class VehicleSchedulingCG
 	{
 		for(Block block : blocks)
 		{
-			IloColumn blockVariable = this.cplex.column(this.cplex.getObjective(), block.getLhs()); 
+			IloColumn blockVariable = this.cplex.column(this.cplex.getObjective(), block.getTotalCostOfBlock()); 
 			
 			for(Trip trip : block.getTripsInBlock())
 			{

@@ -15,6 +15,7 @@ import Data.Node;
 import Data.Trip;
 import Data.VehicleTravel;
 import Data.VehicleType;
+import Networks.VehicleUtil.BetweenTripsOnDifferentNodes;
 import Networks.VehicleUtil.BetweenTripsOnSameNode;
 import Variables.BlockActivity;
 import Variables.Deadrun;
@@ -169,44 +170,29 @@ public class VehicleGraph
 			{
 				if(!trip1.getTrip().equals(trip2.getTrip()) )
 				{
-					if((trip2.getTrip().getDepartureTime() - trip1.getTrip().getArrivalTime()) >= 0 /*&& (trip2.getTrip().getDepartureTime().toMinutesSinceMidnight() - trip1.getTrip().getArrivalTime().toMinutesSinceMidnight() <= 180)*)*/) //Max time between two trips
+					if((trip2.getTrip().getDepartureTime() - trip1.getTrip().getArrivalTime()) >= 0 /*&& (trip2.getTrip().getDepartureTime() - trip1.getTrip().getArrivalTime()) <= 240*/) //Max time between two trips
 					{
 						
 						if(trip1.getTrip().getArrivalNode().equals(trip2.getTrip().getDepartureNode()))
 						{
-							BetweenTripsOnSameNode activities = new BetweenTripsOnSameNode(trip1.getTrip(), trip2.getTrip(), this.vehicleType, this.deadruns, this.allVehicleTravels, this.allNodes); 
+							BetweenTripsOnSameNode activities = new BetweenTripsOnSameNode(trip1.getTrip(), trip2.getTrip(), this.vehicleType, this.deadruns, this.idleTimes, this.allVehicleTravels, this.allNodes); 
 							List<BlockActivity> blockActivitiesBetweenTrips =  activities.getBlockActivities(); 
 							if(!blockActivitiesBetweenTrips.isEmpty())
 							{
-								IdleTime IdleTimeOnArc = null; 
-								if(!activities.getIdleTimes().isEmpty())
-								{
-									Assert.assertTrue(activities.getIdleTimes().size() == 1);
-									if(!this.idleTimes.contains(activities.getIdleTimes().get(0)))
-									{
-										this.idleTimes.add(activities.getIdleTimes().get(0)); 
-										IdleTimeOnArc = activities.getIdleTimes().get(0); 
-									}
-									else
-									{
-										Optional<IdleTime>  existingIdleTime = this.idleTimes.stream().filter(i -> i.equals(activities.getIdleTimes().get(0))).findFirst(); 
-										IdleTimeOnArc = existingIdleTime.get(); 
-									}
-								}
-								VehicleArc betweenTripEdge = new VehicleArc(trip1, trip2, this.vehicleTypeDepot, activities.getDeadrunsOnArc(), IdleTimeOnArc, blockActivitiesBetweenTrips); 
+								VehicleArc betweenTripEdge = new VehicleArc(trip1, trip2, this.vehicleTypeDepot, activities.getDeadrunsOnArc(), activities.getIdleTimeOnArc(), blockActivitiesBetweenTrips); 
 								this.vehicleGraph.addEdge(trip1, trip2, betweenTripEdge);
-							
 							}									
 						}
-						/*else
+						else
 						{
-							List<IBlockElement> blockElementsBetweenTrips =  blockElementsBetweenTripsOnDifferentNodeWithOrWithoutRefuelling(trip1.getTrip(), trip2.getTrip()); 
-							if(!blockElementsBetweenTrips.isEmpty())
+							BetweenTripsOnDifferentNodes activities = new  BetweenTripsOnDifferentNodes(trip1.getTrip(), trip2.getTrip(), this.vehicleType, this.deadruns, this.idleTimes, this.allVehicleTravels, this.allNodes); 
+							List<BlockActivity> blockActivitiesBetweenTrips =  activities.getBlockActivities(); 
+							if(!blockActivitiesBetweenTrips.isEmpty())
 							{
-								ExpVehicleArc betweenTripEdge = new ExpVehicleArc(trip1, trip2, this.vehicleTypeDepot, blockElementsBetweenTrips); 
+								VehicleArc betweenTripEdge = new VehicleArc(trip1, trip2, this.vehicleTypeDepot, activities.getDeadrunsOnArc(), activities.getIdleTimeOnArc(), blockActivitiesBetweenTrips); 
 								this.vehicleGraph.addEdge(trip1, trip2, betweenTripEdge);
 							}
-						}*/
+						}
 				    }
 				}	
 			}

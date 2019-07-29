@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.junit.Assert;
 
 import Data.Trip;
 import Networks.VehicleArc;
@@ -37,11 +38,10 @@ public class SingleDepotVehicleScheduling
 	
 	private IloCplex cplex;
 	private Map<VehicleArc, IloIntVar> vehicleArcVariables;
-	private Map<VehicleVertex, IloNumVar> accDistanceAtVertexVariables; 
 	private Map<Trip, IloRange> successorTripConstraints;
-	private Map<Trip, IloRange> predecessorTripConstaints;
-	private Map<VehicleArc, IloRange> distanceCalculationConstraints; 
-	private Map<VehicleArc,IloRange> maxDistanceConstraints; 
+	private Map<Trip, IloRange> predecessorTripConstaints; 
+	private Map<Integer, IloRange> bendersCuts; 
+	private IloRange minimumRechargingConstraint; 
 	@Getter
 	private List<Block> blocksInSolution;
 	@Getter
@@ -66,66 +66,172 @@ public class SingleDepotVehicleScheduling
 		this.cplex = new IloCplex();
 		this.cplex.addMinimize(); 
 		this.vehicleArcVariables = new HashMap<VehicleArc, IloIntVar>();
-		this.accDistanceAtVertexVariables = new HashMap<VehicleVertex, IloNumVar>(); 
 		this.predecessorTripConstaints = addPredecessorTripConstraints(); 
 		this.successorTripConstraints = addSuccessorTripConstraints();
-		this.distanceCalculationConstraints = addDistanceCalculationConstraints(); 
-		this.maxDistanceConstraints = new HashMap<VehicleArc,IloRange>(); 
+		this.bendersCuts = new HashMap<Integer, IloRange>(); 
 		
-		addVehicleArcVariables(); 
-		addDistanceAccumulationVertex(); 
+		addVehicleArcVariables();
+		//this.minimumRechargingConstraint = addMinimumRechargingConstraint(); 
 		
-		lagrangian(); 
+		benders(); 
 	}
 	
-	private void lagrangian() throws IloException
+	private void benders() throws IloException
 	{
 		int status = 0; 
 		int iterationNumber = 0; 
+		this.cplex.setOut(null);
+		//this.cplex.setParam(IloCplex.IntParam.TimeLimit, 300);
 		
 		while(status != 1)
 		{
-			Map<VehicleArc, Double> accumulatedDistanceOnArcs = solve(); 
+			System.out.println("************************************");
+			System.out.println("Iteration number = " + iterationNumber);
+			List<VehicleArc> arcsInSolution = solve(); 
 			
-			boolean stop = checkTerimation(accumulatedDistanceOnArcs); 
-			
-			if(iterationNumber == 0)
+			BendersSubproblem bendersSub = new BendersSubproblem(vehicleGraph, arcsInSolution, this.vehicleTypeDepot); 
+			if(bendersSub.getViolatedSequences().isEmpty())
 			{
-				this.cplex.setParam(IloCplex.Param.TimeLimit, 30);
-				/*this.cplex.delete(this.cplex.getObjective());
-				
-				IloLinearNumExpr obj = this.cplex.linearNumExpr(); 
-				for(VehicleArc arc : this.vehicleArcsWithLineTrips)
-				{
-					if(arc.getStartTimeOfReCharging() > -1)
-					{
-						obj.addTerm(1, this.vehicleArcVariables.get(arc));
-					}
-				}
-				
-				this.cplex.addMaximize(obj);*/ 
+				status = 1;
 			}
-			iterationNumber++; 
-			
-			if(stop)
+			else
+			{
+				addCombinatorialCut(bendersSub.getViolatedSequences(), iterationNumber); 
+			}
+			/*if(bendersSub.isFeasible())
 			{
 				status = 1; 
+			}
+			else
+			{
+				addCut(vehicleGraph, arcsInSolution, bendersSub.getDistCalVehicleArcDuals(), bendersSub.getMaxDistanceDuals(), iterationNumber); 
+			}*/
+			
+			
+			iterationNumber++; 
+			
+		}
+		
+		for(Block block : blocksInSolution)
+		{
+			for(BlockActivity ba : block.getBlockActivities())
+			{
+				System.out.println(block.getBlockId() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
 			}
 		}
 	}
 	
-	private Map<VehicleArc, Double> solve() throws IloException
+	private void addCombinatorialCut(List<List<VehicleArc>> violatedSequences, int iteration) throws IloException
+	{
+		double i = 0; 
+		for(List<VehicleArc> violatedSequence : violatedSequences)
+		{
+			//System.out.println("*****Cut******");
+			IloLinearNumExpr cut = this.cplex.linearNumExpr();
+			 
+			double acc = 0; 
+			for(VehicleArc arc : violatedSequence)
+			{
+				//System.out.println(arc.getPredecessorVertex().getVertexId() + ", " + arc.getSuccessorVertex().getVertexId());
+				cut.addTerm(1, this.vehicleArcVariables.get(arc));
+				
+				/*acc = acc + arc.getSuccessorVertex().getDistance(); 
+				List<VehicleArc> rechargingArcs = this.vehicleGraph.edgeSet().stream().filter(e -> e.getPredecessorVertex().equals(arc.getSuccessorVertex()) && e.getStartTimeOfReCharging() > -1).collect(Collectors.toList()); 
+				for(VehicleArc rechargingArc : rechargingArcs)
+				{
+					double distanceToRecharging = acc + rechargingArc.getDistancedCoveredBeforeReCharging(); 
+					if(distanceToRecharging <= this.vehicleTypeDepot.getVehicleType().getMaximumDistanceWithoutRecharging())
+					{
+						cut.addTerm(1, this.vehicleArcVariables.get(rechargingArc));
+					}
+				}*/
+				
+			}
+			
+			double rhs = violatedSequence.size() -1; 
+			Assert.assertTrue(violatedSequence.size() >= 1);
+			IloRange constraint = this.cplex.addRange(-Double.MAX_VALUE, cut, rhs, "ctBendersCuts_" + iteration + "_" + i);
+			i++; 
+			//this.bendersCuts.put(iteration, constraint);
+		}
+		
+		/*double lb = this.minimumRechargingConstraint.getLB() + 1; 
+		this.minimumRechargingConstraint.setLB(lb);*/
+	}
+	
+	private void addCut(DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph, List<VehicleArc> arcsInSolution, Map<VehicleArc, Double> distCalVehicleArcDuals, Map<VehicleArc, Double> maxDistanceDuals, int iteration) throws IloException
+	{
+		double maxDistance = this.vehicleTypeDepot.getVehicleType().getMaximumDistanceWithoutRecharging(); 
+		
+		IloLinearNumExpr cut = this.cplex.linearNumExpr(); 
+		
+		for(VehicleArc arc : vehicleGraph.edgeSet())
+		{
+			double coef = 0;
+			if(distCalVehicleArcDuals.containsKey(arc))
+			{
+				if(arc.getPredecessorVertex().getTrip() != null && arc.getSuccessorVertex().getTrip() != null && arc.getStartTimeOfReCharging() == -1)
+				{
+					coef = coef + arc.getTotalDistance() + arc.getSuccessorVertex().getDistance();
+				}
+				else if(arc.getPredecessorVertex().getTrip() == null)
+				{
+					coef = coef + arc.getTotalDistance() + arc.getSuccessorVertex().getDistance(); 
+				}
+				else if(arc.getStartTimeOfReCharging() > -1)
+				{
+					coef = coef + arc.getDistanceCoveredAfterReCharging() + arc.getSuccessorVertex().getDistance();
+				}
+				coef = coef + maxDistance; 
+				coef = coef*distCalVehicleArcDuals.get(arc); 
+			}
+			
+			
+			double coef2 = 0; 
+			if(maxDistanceDuals.containsKey(arc))
+			{
+				coef2 = 0; 
+				if(arc.getStartTimeOfReCharging() > -1)
+				{
+					coef2 = coef2 - arc.getDistancedCoveredBeforeReCharging(); 
+				}
+				else if(arc.getSuccessorVertex().getTrip() == null)
+				{
+					coef2 = coef2 - arc.getTotalDistance();
+				}
+				
+				coef2 = coef2*maxDistanceDuals.get(arc); 
+			}
+			
+			double total = coef + coef2; 
+			
+			cut.addTerm(total, this.vehicleArcVariables.get(arc));
+		}
+		
+		double rhs = maxDistanceDuals.entrySet().stream().mapToDouble(e -> e.getValue()).sum(); 
+		rhs = - (rhs*maxDistance);
+		
+		double rhs2 = distCalVehicleArcDuals.entrySet().stream().mapToDouble(e -> e.getValue()).sum();
+		rhs2 = (rhs2*this.vehicleTypeDepot.getVehicleType().getMaximumDistanceWithoutRecharging()); 
+		
+		double totalRhs = rhs + rhs2; 
+		IloRange constraint = this.cplex.addRange(-Double.MAX_VALUE, cut, totalRhs, "ctBendersCust_" + iteration);
+		this.bendersCuts.put(iteration, constraint); 
+		
+	}
+	
+	private List<VehicleArc> solve() throws IloException
 	{
 		this.blocksInSolution.clear();
 		this.deadrunsInSolution.clear();
 		this.idleTimesInSolution.clear();
-		Map<VehicleArc, Double> accumulatedDistanceOnArcs = new HashMap<VehicleArc, Double>();
 		
+		List<VehicleArc> arcsInSolution = new ArrayList<VehicleArc>();
+		
+		this.cplex.setParam(IloCplex.IntParam.AdvInd, 0);
 		if(this.cplex.solve())
 		{
 			System.out.println("Objective = " + this.cplex.getObjValue());
-			
-			List<VehicleArc> arcsInSolution = new ArrayList<VehicleArc>(); 
 			
 			for(VehicleArc arc : this.vehicleArcVariables.keySet())
 			{
@@ -145,7 +251,6 @@ public class SingleDepotVehicleScheduling
 			List<VehicleArc> starts = arcsInSolution.stream().filter(a -> a.getPredecessorVertex().getTrip() == null).collect(Collectors.toList()); 
 			for(VehicleArc start : starts)
 			{ 
-				double accDist = 0.0; 
 				List<Trip> trips = new ArrayList<Trip>(); 
 				List<BlockActivity> blockActivities = new ArrayList<BlockActivity>(); 
 				List<Deadrun> deadruns = new ArrayList<Deadrun>(); 
@@ -155,25 +260,6 @@ public class SingleDepotVehicleScheduling
 				VehicleArc current = start; 
 				while(!stop)
 				{
-					if(current.getStartTimeOfReCharging() == -1 && current.getSuccessorVertex().getTrip() != null)
-					{
-						accDist = accDist + current.getTotalDistance() + current.getSuccessorVertex().getDistance(); 
-					}
-					else if(current.getStartTimeOfReCharging() > -1)
-					{
-						accDist = accDist + current.getDistancedCoveredBeforeReCharging(); 
-						//System.out.println("Arc = " + current.getPredecessorVertex().getVertexId() + "_" + current.getSuccessorVertex().getVertexId() + ", dist = " + value);
-						accumulatedDistanceOnArcs.put(current, accDist); 
-						
-						accDist = 0.0; 
-						accDist = current.getDistanceCoveredAfterReCharging() + current.getSuccessorVertex().getDistance(); 
-					}
-					else if(current.getSuccessorVertex().getTrip() == null)
-					{
-						accDist = accDist + current.getTotalDistance(); 
-						//System.out.println("Arc = " + current.getPredecessorVertex().getVertexId() + "_" + current.getSuccessorVertex().getVertexId() + ", dist = " + value);
-						accumulatedDistanceOnArcs.put(current, accDist); 
-					}
 					
 					blockActivities.addAll(current.getBlockActivitiesOnEdge()); 
 					if(!current.getDeadrunsOnEdge().isEmpty())
@@ -227,54 +313,19 @@ public class SingleDepotVehicleScheduling
 						throw new IllegalArgumentException(); 
 					}
 				}
-			}			
-		}
-		
-		return accumulatedDistanceOnArcs; 
-	
-	}
-	
-	
-	private boolean checkTerimation(Map<VehicleArc, Double> accumulatedDistanceOnArcs) throws IloException
-	{
-		boolean added = false; 
-		for(VehicleArc arc : accumulatedDistanceOnArcs.keySet())
-		{
-			if(accumulatedDistanceOnArcs.get(arc) > this.vehicleTypeDepot.getVehicleType().getMaximumDistanceWithoutRecharging())
-			{
-				added = true; 
-				addMaxDistanceConstraints(arc); 
-				break; 
 			}
+			
+			/*for(Block block : blocksInSolution)
+			{
+				for(BlockActivity ba : block.getBlockActivities())
+				{
+					System.out.println(block.getBlockId() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
+				}
+			}*/
 		}
 		
-		if(!added)
-		{
-			return true; 
-		}
-	
-		return false; 
-	}
-	
-	private void addMaxDistanceConstraints(VehicleArc arc) throws IloException
-	{
-		IloLinearNumExpr constraint = this.cplex.linearNumExpr(); 
 		
-		constraint.addTerm(1, this.accDistanceAtVertexVariables.get(arc.getPredecessorVertex()));
-		
-		double coef = 0.0; 
-		if(arc.getStartTimeOfReCharging() > -1)
-		{
-			coef = arc.getDistancedCoveredBeforeReCharging(); 
-		}
-		else
-		{
-			coef = arc.getTotalDistance(); 
-		}
-		
-		constraint.addTerm(coef, this.vehicleArcVariables.get(arc));
-		
-		this.maxDistanceConstraints.put(arc, this.cplex.addRange(-Double.MAX_VALUE, constraint, this.vehicleTypeDepot.getVehicleType().getMaximumDistanceWithoutRecharging(), "CtMaxDist_" + arc.getPredecessorVertex().getVertexId() +"_" + arc.getSuccessorVertex().getVertexId())); 
+		return arcsInSolution; 
 	}
 	
 	
@@ -309,7 +360,6 @@ public class SingleDepotVehicleScheduling
 	
 	private void addVehicleArcVariables() throws IloException
 	{
-		double maxDist = this.vehicleTypeDepot.getVehicleType().getMaximumDistanceWithoutRecharging(); 
 		for(VehicleArc arcWithLineTrips : this.vehicleArcsWithLineTrips)
 		{
 			double coef = arcWithLineTrips.getTotalDistance() * this.vehicleTypeDepot.getVehicleType().getCostPerkm(); 
@@ -320,9 +370,6 @@ public class SingleDepotVehicleScheduling
 				
 				IloColumn arcVariable = this.cplex.column(this.cplex.getObjective(), coef);
 				arcVariable = arcVariable.and(this.cplex.column(this.predecessorTripConstaints.get(arcWithLineTrips.getSuccessorVertex().getTrip()), 1)); 
-				
-				double totalDistance = arcWithLineTrips.getTotalDistance() + arcWithLineTrips.getSuccessorVertex().getDistance() + maxDist;
-				arcVariable = arcVariable.and(this.cplex.column(this.distanceCalculationConstraints.get(arcWithLineTrips), -totalDistance)); 
 				
 				this.vehicleArcVariables.put(arcWithLineTrips, this.cplex.intVar(arcVariable, 0, 1)); 
 			}
@@ -339,51 +386,26 @@ public class SingleDepotVehicleScheduling
 				arcVariable = arcVariable.and(this.cplex.column(this.predecessorTripConstaints.get(arcWithLineTrips.getSuccessorVertex().getTrip()), 1)); 
 				arcVariable = arcVariable.and(this.cplex.column(this.successorTripConstraints.get(arcWithLineTrips.getPredecessorVertex().getTrip()), 1));
 				
-				if(arcWithLineTrips.getStartTimeOfReCharging() > -1)
-				{
-					double totalDistance = arcWithLineTrips.getDistanceCoveredAfterReCharging() + arcWithLineTrips.getSuccessorVertex().getDistance() + maxDist;
-					arcVariable = arcVariable.and(this.cplex.column(this.distanceCalculationConstraints.get(arcWithLineTrips), -totalDistance)); 
-				}
-				else
-				{
-					double totalDistance = arcWithLineTrips.getTotalDistance() + arcWithLineTrips.getSuccessorVertex().getDistance() + maxDist;
-					arcVariable = arcVariable.and(this.cplex.column(this.distanceCalculationConstraints.get(arcWithLineTrips), -totalDistance)); 
-				}
 				
 				this.vehicleArcVariables.put(arcWithLineTrips, this.cplex.intVar(arcVariable, 0, 1)); 
 			}
 		}
 	}
 	
-	private void addDistanceAccumulationVertex() throws IloException
+	private IloRange addMinimumRechargingConstraint() throws IloException
 	{
-		List<VehicleVertex> tripVertices = this.vehicleGraph.vertexSet().stream().filter(v -> v.getTrip()!= null && this.tripsInLine.contains(v.getTrip())).collect(Collectors.toList()); 
+		List<VehicleArc> rechargingArcs = this.vehicleGraph.edgeSet().stream().filter(a -> a.getStartTimeOfReCharging() > -1).collect(Collectors.toList()); 
 		
-		for(VehicleVertex tripVertex : tripVertices)
+		IloLinearNumExpr recharge = this.cplex.linearNumExpr(); 
+		for(VehicleArc rechargingArc : rechargingArcs)
 		{
-			IloColumn vertesDistVar  = this.cplex.column(this.cplex.getObjective(), 0); 
-			
-			Set<VehicleArc> outgoingEdges = this.vehicleGraph.outgoingEdgesOf(tripVertex).stream().filter(v -> this.vehicleArcsWithLineTrips.contains(v)).collect(Collectors.toSet()); 
-			
-			for(VehicleArc outgoingArc : outgoingEdges)
-			{
-				if(outgoingArc.getSuccessorVertex().getTrip() != null && outgoingArc.getStartTimeOfReCharging() == -1)
-				{
-					vertesDistVar = vertesDistVar.and(this.cplex.column(this.distanceCalculationConstraints.get(outgoingArc), -1)); 
-				}	
-			}
-			
-			Set<VehicleArc> incomingEdges = this.vehicleGraph.incomingEdgesOf(tripVertex).stream().filter(v -> this.vehicleArcsWithLineTrips.contains(v)).collect(Collectors.toSet()); 
-			
-			for(VehicleArc incomingArc : incomingEdges)
-			{
-				vertesDistVar = vertesDistVar.and(this.cplex.column(this.distanceCalculationConstraints.get(incomingArc), 1)); 
-			}
-			
-			this.accDistanceAtVertexVariables.put(tripVertex, this.cplex.numVar(vertesDistVar, 0, Double.MAX_VALUE, "dist_" + tripVertex.getVertexId())); 
+			recharge.addTerm(1, this.vehicleArcVariables.get(rechargingArc));
 		}
+		
+		IloRange rechargingConstraint = this.cplex.addRange(0, recharge, Double.MAX_VALUE, "ctMinRecharge_"); 
+		
+		return rechargingConstraint; 
 	}
-	
 	
 	private Map<Trip, IloRange> addPredecessorTripConstraints() throws IloException
 	{
@@ -405,29 +427,5 @@ public class SingleDepotVehicleScheduling
 		}
 		
 		return successorTripConstraints; 
-	}
-	
-	private Map<VehicleArc, IloRange> addDistanceCalculationConstraints() throws IloException
-	{
-		Map<VehicleArc, IloRange> distanceCalConstraints = new HashMap<VehicleArc, IloRange>(); 
-		double maxDist = this.vehicleTypeDepot.getVehicleType().getMaximumDistanceWithoutRecharging(); 
-		
-		for(VehicleArc arc : this.vehicleArcsWithLineTrips)
-		{
-			if(arc.getPredecessorVertex().getTrip() != null && arc.getSuccessorVertex().getTrip() != null && arc.getStartTimeOfReCharging() == -1)
-			{
-				distanceCalConstraints.put(arc, this.cplex.addRange(-maxDist, Double.MAX_VALUE, "ctDistCal_" + arc.getPredecessorVertex().getTrip().getTripId() + "_" + arc.getSuccessorVertex().getTrip().getTripId())); 
-			}
-			else if(arc.getPredecessorVertex().getTrip() == null)
-			{
-				distanceCalConstraints.put(arc, this.cplex.addRange(-maxDist, Double.MAX_VALUE, "ctDistCal_" + arc.getPredecessorVertex().getVertexId() + "_" + arc.getSuccessorVertex().getTrip().getTripId())); 
-			}
-			else if(arc.getStartTimeOfReCharging() > -1)
-			{
-				distanceCalConstraints.put(arc, this.cplex.addRange(-maxDist, Double.MAX_VALUE, "ctDistCal_" + arc.getPredecessorVertex().getTrip().getTripId() + "_" + arc.getSuccessorVertex().getTrip().getTripId())); 
-			}	
-		}
-		
-		return distanceCalConstraints; 
 	}
 }

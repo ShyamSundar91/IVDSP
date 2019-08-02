@@ -91,7 +91,7 @@ public class InitialSolutionController
 			System.out.println("***************************************************");
 			System.out.println("Line number = " + lineNumber + ", number of trips = " + tripsInLine.size());
 			
-			GraphCopy graphCopy = new GraphCopy(this.vehicleGraphs, this.driverGraphs, tripsInLine, tripsInLine);  
+			GraphCopy graphCopy = new GraphCopy(this.vehicleGraphs, this.driverGraphs, tripsInLine, tripsInLine, new HashSet<Deadrun>(), new HashSet<IdleTime>());  
 			Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphCopy = graphCopy.getVehicleGraphsCopy(); 
 			Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphCopy = graphCopy.getDriverGraphsCopy(); 
 			

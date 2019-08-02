@@ -29,8 +29,8 @@ public class BranchingDecisionDriver
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
 	private Map<Duty, Integer> initialAndDutiesGenerated;
 	private List<Block> blocksInSolution; 
-	private List<Deadrun> deadrunsInSolution; 
-	private List<IdleTime> idleTimesInSolution; 
+	private Set<Deadrun> deadrunsInSolution; 
+	private Set<IdleTime> idleTimesInSolution; 
 	private boolean earlyTermination;
 	
 	@Getter

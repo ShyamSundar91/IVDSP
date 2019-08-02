@@ -31,6 +31,7 @@ public class VehicleArc
 	private int endTimeOfReCharging; 
 	private double distancedCoveredBeforeReCharging; 
 	private double distanceCoveredAfterReCharging;
+	private boolean driverBreakPossible; 
 	
 	public VehicleArc(VehicleVertex predecessorVertex, VehicleVertex successorVertex, VehicleTypeDepot vehicleTypeDepot, List<Deadrun> deadrunsOnEdge, IdleTime idleTimeOnArc, List<BlockActivity> blockActivitiesOnEdge)
 	{
@@ -57,6 +58,21 @@ public class VehicleArc
 		if(this.predecessorVertex.getTrip() == null)
 		{
 			this.totalCostOfArc = this.totalCostOfArc + this.vehicleTypeDepot.getVehicleType().getFixedCost(); 
+		}
+		
+		this.driverBreakPossible = false; 
+		checkIfDriverBreakIsPossible(); 
+	}
+	
+	private void checkIfDriverBreakIsPossible()
+	{
+		if(this.idleTimeOnArc != null && this.idleTimeOnArc.getNode().isDriverBreakAllowed())
+		{
+			int duration = this.idleTimeOnArc.getArrivalTime() - this.idleTimeOnArc.getDepartureTime(); 
+			if(duration >= 18 && duration <= 36)
+			{
+				this.driverBreakPossible = true; 
+			}
 		}
 	}
 	

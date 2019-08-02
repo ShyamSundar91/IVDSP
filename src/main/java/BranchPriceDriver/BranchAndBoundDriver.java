@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.junit.Assert;
 
 import Data.Trip;
 import Networks.DriverArc;
@@ -25,8 +27,8 @@ public class BranchAndBoundDriver
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
 	private Map<Duty, Integer> initialAndDutiesGenerated;
 	private List<Block> blocksInSolution; 
-	private List<Deadrun> deadrunsInSolution; 
-	private List<IdleTime> idleTimesInSolution; 
+	private Set<Deadrun> deadrunsInSolution; 
+	private Set<IdleTime> idleTimesInSolution; 
 	private boolean earlyTermination;
 	@Getter
 	private List<Duty> dutiesGenerated; 
@@ -34,7 +36,9 @@ public class BranchAndBoundDriver
 	private List<Duty> dutiesInSolution; 
 	private List<BBNodeDriver> nodes; 
 	private Map<Integer, Double> lpObjectivesAtEachNode; 
-	public BranchAndBoundDriver(List<Trip> trips, List<Block> blocksInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Duty, Integer> initialAndDutiesGenerated, boolean earlyTermination) throws IloException
+	@Getter
+	private double objective; 
+	public BranchAndBoundDriver(List<Trip> trips, List<Block> blocksInSolution, Set<Deadrun> deadrunsInSolution, Set<IdleTime> idleTimesInSolution, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Duty, Integer> initialAndDutiesGenerated, boolean earlyTermination) throws IloException
 	{
 		this.trips = trips; 
 		this.driverGraphs = driverGraphs; 
@@ -46,6 +50,7 @@ public class BranchAndBoundDriver
 		this.dutiesGenerated = new ArrayList<Duty>(); 
 		this.nodes = new ArrayList<BBNodeDriver>();
 		this.lpObjectivesAtEachNode = new HashMap<Integer, Double>(); 
+		this.objective = Double.MAX_VALUE; 
 		
 		createRootNode(); 
 		algorithm(); 
@@ -80,7 +85,8 @@ public class BranchAndBoundDriver
 			}
 			else
 			{
-				this.dutiesInSolution = currentNode.getDutiesInSolution();  
+				this.dutiesInSolution = currentNode.getDutiesInSolution(); 
+				this.objective = currentNode.getLpObjective(); 
 			}
 			
 			this.dutiesGenerated.clear();
@@ -89,17 +95,21 @@ public class BranchAndBoundDriver
 			nodeNo++; 
 		}
 		
-		for(Duty duty : this.dutiesInSolution)
+		/*for(Duty duty : this.dutiesInSolution)
 		{
 			for(DutyActivity da : duty.getDutyActivities())
 			{
 				System.out.println(duty.getDutyId() + "; " + duty.getTotalDuration() + "; " + duty.getTotalCostOfDuty() + "; " + da.getDepartureNode().getNodeId() + "; " + da.getArrivalNode().getNodeId() + "; " + da.getDepartureTime() + "; " + da.getArrivalTime() + "; " + da.getActivity() + "; " + da.getTripOrDeadrunId());
 			} 
-		}
+		}*/
 		
+		double nodeLp = 0; 
 		for(Integer node : this.lpObjectivesAtEachNode.keySet())
 		{
 			System.out.println(node + "; " + this.lpObjectivesAtEachNode.get(node));
+			double val1 = Math.round(this.lpObjectivesAtEachNode.get(node) * 100.0) / 100.0; 
+			Assert.assertTrue(val1 - nodeLp >= 0);
+			nodeLp = val1; 
 		}
 		
 	}

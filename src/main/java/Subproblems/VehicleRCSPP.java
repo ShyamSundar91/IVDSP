@@ -392,7 +392,7 @@ public class VehicleRCSPP
 				tripsInLabel.addAll(label.getUpdatedResources().getUpdatedTrips()); 
 				tripsInLabel.retainAll(tripsCovered); 
 				
-				if(tripsInLabel.size() <= 5)
+				if(tripsInLabel.size() <= 1)
 				{
 					selectedLabels.add(label); 
 					tripsCovered.addAll(label.getUpdatedResources().getUpdatedTrips()); 

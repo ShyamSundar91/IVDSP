@@ -2,8 +2,10 @@ package ALNS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
 
@@ -15,7 +17,11 @@ import Networks.VehicleArc;
 import Networks.VehicleTypeDepot;
 import Networks.VehicleVertex;
 import Variables.Block;
+import Variables.BlockActivity;
+import Variables.Deadrun;
 import Variables.Duty;
+import Variables.DutyActivity;
+import Variables.IdleTime;
 import ilog.concert.IloException;
 import lombok.Getter;
 
@@ -41,8 +47,16 @@ public class LocalSearch
 	private int[] destoryChosenInSegement; 
 	
 	private int maxIterations;
-	private int segmentSize; 
+	private int segmentSize;
 	
+	private Map<Trip, Double> tripVehicleDuals; 
+	private Map<Trip, Double> tripDriverDuals; 
+	private Map<Deadrun, Double> deadrunDuals;
+	private Map<IdleTime, Double> idleTimeDuals; 
+	
+	private Map<Integer, List<Double>> weightAtEachIteration; 
+	private Map<Integer, List<Integer>> scoreAtEachIteration; 
+	private Map<Integer, List<Double>> objectiveAtEachIteration; 
 	public LocalSearch(List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective) throws IloException
 	{
 		this.allTrips = allTrips; 
@@ -52,14 +66,45 @@ public class LocalSearch
 		this.bestDutySolution = new ArrayList<Duty>(bestDutySolution); 
 		this.bestObjective = bestObjective; 
 		
+		this.tripVehicleDuals = new HashMap<Trip, Double>(); 
+		this.tripDriverDuals = new HashMap<Trip, Double>(); 
+		this.deadrunDuals = new HashMap<Deadrun, Double>(); 
+		this.idleTimeDuals = new HashMap<IdleTime, Double>(); 
+		
+		this.weightAtEachIteration = new HashMap<Integer, List<Double>>(); 
+		this.scoreAtEachIteration = new HashMap<Integer, List<Integer>>(); 
+		this.objectiveAtEachIteration = new HashMap<Integer, List<Double>>(); 
+		
 		initializeParameters(); 
 		
 		algorithm(); 
+		
+		System.out.println("Final Solution...");
+		for(Block block : this.bestBlockSolution)
+		{
+		
+			System.out.println();
+			for(BlockActivity ba : block.getBlockActivities())
+			{
+				System.out.println(block.getBlockId() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
+			}
+		}
+		
+		for(Duty duty : this.bestDutySolution)
+		{
+			System.out.println();
+			for(DutyActivity da : duty.getDutyActivities())
+			{
+				System.out.println(duty.getDutyId() + "; " + duty.getTotalDuration() + "; " + duty.getTotalCostOfDuty() + "; " + da.getDepartureNode().getNodeId() + "; " + da.getArrivalNode().getNodeId() + "; " + da.getDepartureTime() + "; " + da.getArrivalTime() + "; " + da.getActivity() + "; " + da.getTripOrDeadrunId());
+			}
+		}
+		
+		displayKPI(); 
 	}
 	
 	private void initializeParameters()
 	{
-		this.score1 = 10;
+		this.score1 = 25;
 		this.score2 = 0; 
 		this.lambda = 0.1; 
 		
@@ -67,13 +112,14 @@ public class LocalSearch
 		this.segmentSize = 25; 
 		
 		int numberOfDestroyMethods = 2; 
+		double initialProbabilities = 1.0/(double)(numberOfDestroyMethods); 
 		this.destroyWeights = new double[numberOfDestroyMethods]; 
 		this.destroyProbabilities = new double[numberOfDestroyMethods]; 
 		this.destroyScoreInSegment = new int[numberOfDestroyMethods]; 
 		this.destoryChosenInSegement = new int[numberOfDestroyMethods]; 
 		
 		Arrays.fill(destroyWeights, 1.0);
-		Arrays.fill(this.destroyProbabilities, 0.5);
+		Arrays.fill(this.destroyProbabilities, initialProbabilities);
 		Arrays.fill(this.destoryChosenInSegement, 0);
 		Arrays.fill(this.destroyScoreInSegment, 0);
 	}
@@ -85,22 +131,32 @@ public class LocalSearch
 		{
 			int selectedDestroyMethod = selectDestroyMethod(); 
 			int scoreInIteration = 0; 
+			System.out.println("*****************************************" + " Local search iteration number = " + i + " *****************************************");
 			System.out.println("Selected destroy method = " + selectedDestroyMethod);
 			
-			DestroyMethod destroy = new DestroyMethod(i, selectedDestroyMethod, this.bestBlockSolution, this.bestDutySolution); 
+			DestroyMethod destroy = new DestroyMethod(i, selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.tripVehicleDuals, this.tripDriverDuals, this.deadrunDuals, this.idleTimeDuals, this.bestBlockSolution, this.bestDutySolution); 
 			List<Block> intermediateBlockSolution = destroy.getBlocksInSolution(); 
-			List<Duty> intermediateDutySolution = destroy.getDutiesInSolution(); 
+			List<Duty> intermediateDutySolution = destroy.getDutiesInSolution();
+			List<Block> blocksRemoved = destroy.getBlocksToBeRemoved(); 
+			List<Duty> dutiesRemoved = destroy.getDutiesToBeRemoved(); 
+			Set<Deadrun> deadrunsInSolution = destroy.getDeadrunsInSolution(); 
+			Set<IdleTime> idleTimesInSolution = destroy.getIdleTimesInSolution(); 
 			List<Trip> uncoveredTripsOfVehicle = destroy.getUncoveredTripsOfVehicle();
 			List<Trip> uncoveredTripsOfDriver = destroy.getUncoveredTripsOfDriver(); 
 			
-			RepairMethod repair = new RepairMethod(this.allTrips, this.vehicleGraphs, this.driverGraphs, intermediateBlockSolution, intermediateDutySolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver); 
-			if(repair.getObjective() < this.bestObjective)
+			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver); 
+			this.tripVehicleDuals = repair.getTripVehicleDuals(); 
+			this.tripDriverDuals = repair.getTripDriverDuals(); 
+			this.deadrunDuals = repair.getDeadrunDuals(); 
+			this.idleTimeDuals = repair.getIdleTimeDuals(); 
+			
+			if(this.bestObjective - repair.getObjective() > 1e-3)
 			{
 				this.bestBlockSolution = repair.getBlocksInSoution(); 
 				this.bestDutySolution = repair.getDutiesInSolution(); 
 				this.bestObjective = repair.getObjective();
 				System.out.println("Best objective = " + this.bestObjective);
-				scoreInIteration = this.score1; 
+				scoreInIteration = this.score1;
 			}
 			else
 			{
@@ -116,7 +172,32 @@ public class LocalSearch
 				
 				resetScores(); 
 			}
+			
+			kpi(i); 
 		}
+	}
+	
+	private void kpi(int iterationNumber)
+	{
+		List<Double> weights = new ArrayList<Double>(); 
+		for(int j = 0; j < this.destroyWeights.length; j++)
+		{
+			weights.add(this.destroyWeights[j]); 
+		}
+		this.weightAtEachIteration.put(iterationNumber, weights); 
+		
+		List<Integer> scores = new ArrayList<Integer>(); 
+		for(int j = 0; j < this.destroyScoreInSegment.length; j++)
+		{
+			scores.add(this.destroyScoreInSegment[j]); 
+		}
+		this.scoreAtEachIteration.put(iterationNumber, scores);
+		
+		List<Double> objective = new ArrayList<Double>(); 
+		objective.add(this.bestObjective); 
+		objective.add((double)this.bestBlockSolution.size()); 
+		objective.add((double)this.bestDutySolution.size()); 
+		this.objectiveAtEachIteration.put(iterationNumber, objective); 
 	}
 	
 	private void updateProbabilities()
@@ -158,9 +239,37 @@ public class LocalSearch
 				break; 
 			}
 		}
-		
-		
 		return selectedDestroyMethod; 
+	}
+	
+	private void displayKPI()
+	{
+		System.out.println("Weights...");
+		for(Integer i : this.weightAtEachIteration.keySet())
+		{
+			this.weightAtEachIteration.get(i).forEach(w -> {
+				System.out.print(w + "; ");
+			});
+			System.out.println();
+		}
+		
+		System.out.println("Scores...");
+		for(Integer i : this.scoreAtEachIteration.keySet())
+		{
+			this.scoreAtEachIteration.get(i).forEach(w -> {
+				System.out.print(w + "; ");
+			});
+			System.out.println();
+		}
+		
+		System.out.println("Objectives...");
+		for(Integer i : this.objectiveAtEachIteration.keySet())
+		{
+			this.objectiveAtEachIteration.get(i).forEach(w -> {
+				System.out.print(w + "; ");
+			});
+			System.out.println();
+		}
 	}
 
 }

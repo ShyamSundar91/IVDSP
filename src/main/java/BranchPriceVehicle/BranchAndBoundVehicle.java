@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.junit.Assert;
 
 import Data.Trip;
 import Networks.VehicleArc;
@@ -36,6 +37,8 @@ public class BranchAndBoundVehicle
 	@Getter
 	private List<Block> blocksGenerated; 
 	private Map<Integer, Double> lpObjectivesAtEachNode; 
+	@Getter
+	private double objective; 
 	public BranchAndBoundVehicle(List<Trip> trips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraph, Map<Block, Integer> initialBlocksAndGenerated, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, boolean earlyTermination) throws IloException
 	{
 		this.trips = trips; 
@@ -48,6 +51,7 @@ public class BranchAndBoundVehicle
 		
 		this.nodes = new ArrayList<BBNodeVehicle>();
 		this.lpObjectivesAtEachNode = new HashMap<Integer, Double>(); 
+		this.objective = Double.MAX_VALUE;  
 		createRootNode(); 
 		algorithm(); 
 	}
@@ -81,6 +85,7 @@ public class BranchAndBoundVehicle
 			}
 			else
 			{
+				this.objective = currentNode.getLpObjective(); 
 				this.blocksInSolution = currentNode.getBlocksInSolution(); 
 				this.deadrunsInSolution = currentNode.getDeadrunsInSolution(); 
 				this.idleTimesInSolution = currentNode.getIdleTimesInSolution(); 
@@ -92,17 +97,22 @@ public class BranchAndBoundVehicle
 			nodeNo++; 
 		}
 		
-		for(Block block : blocksInSolution)
+		/*for(Block block : blocksInSolution)
 		{
 			for(BlockActivity ba : block.getBlockActivities())
 			{
 				System.out.println(block.getBlockId() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
 			}
-		}
+		}*/
 		
+		
+		double nodeLp = 0; 
 		for(Integer node : this.lpObjectivesAtEachNode.keySet())
 		{
 			System.out.println(node + "; " + this.lpObjectivesAtEachNode.get(node));
+			double val1 = Math.round(this.lpObjectivesAtEachNode.get(node) * 100.0) / 100.0; 
+			Assert.assertTrue(val1 - nodeLp >= 0);
+			nodeLp = val1; 
 		}
 	}
 	

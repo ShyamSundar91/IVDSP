@@ -84,6 +84,15 @@ public class IntegratedMasterProblem
 	private boolean useDeadrunsAndIdleTimesInMaster; 
 	private int noImprovement;
 	private int terminationCriteria; 
+	
+	@Getter
+	private Map<Trip, Double> tripVehicleDuals; 
+	@Getter
+	private Map<Trip, Double> tripDriverDuals; 
+	@Getter
+	private Map<Deadrun, Double> deadrunDuals;
+	@Getter
+	private Map<IdleTime, Double> idleTimeDuals; 
 	public IntegratedMasterProblem(List<Trip> trips, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Block, Integer> initialBlocksAndGenerated, Map<Duty, Integer> initialDutiesAndGenerated, boolean earlyTermination) throws IloException
 	{
 		this.trips = trips; 
@@ -118,6 +127,11 @@ public class IntegratedMasterProblem
 		this.continousBusAttendanceConstraints = addContinuousBusAttendanceConstraints(this.idleTimes); 
 		this.blockVariables = new HashMap<Block, IloNumVar>(); 
 		this.dutyVariables = new HashMap<Duty, IloNumVar>(); 
+		
+		this.tripVehicleDuals = new HashMap<Trip, Double>(); 
+		this.tripDriverDuals = new HashMap<Trip, Double>(); 
+		this.deadrunDuals = new HashMap<Deadrun, Double>(); 
+		this.idleTimeDuals = new HashMap<IdleTime, Double>(); 
 		
 		addBlockVariables(this.initialBlocksAndGenerated.keySet()); 
 		addDutyVariables(this.initialDutiesAndGenerated.keySet()); 
@@ -234,6 +248,14 @@ public class IntegratedMasterProblem
 				{
 					status = solveSubproblems(iterationNumber, tripsVehicleDual, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual); 
 				}
+				
+				if(status == 1)
+				{
+					this.tripVehicleDuals.putAll(tripsVehicleDual);
+					this.tripDriverDuals.putAll(tripsDriverDual);
+					this.deadrunDuals.putAll(deadrunsLowerLimitDual);
+					this.idleTimeDuals.putAll(idleTimesDual);
+				}
 			}
 			else
 			{
@@ -266,13 +288,13 @@ public class IntegratedMasterProblem
 			}
 		}
 		
-		if(iteration != 0 && iteration%50 == 0)
+		if(iteration != 0 && iteration%100 == 0)
 		{
 			List<Block> blocksToRemove = new ArrayList<Block>(); 
 			List<Duty> dutiesToRemove = new ArrayList<Duty>(); 
 			for(Block block : this.blockVariables.keySet())
 			{
-				if(block.getNumberOfIterationsInMP() >= 49 && block.getNumberOfTimesChosen() == 0)
+				if(block.getNumberOfIterationsInMP() >= 99 && block.getNumberOfTimesChosen() == 0)
 				{
 					blocksToRemove.add(block); 
 				}
@@ -280,7 +302,7 @@ public class IntegratedMasterProblem
 			
 			for(Duty duty : this.dutyVariables.keySet())
 			{
-				if(duty.getNumberOfIterationsInMP() >= 49 && duty.getNumberOfTimesChosen() == 0)
+				if(duty.getNumberOfIterationsInMP() >= 99 && duty.getNumberOfTimesChosen() == 0)
 				{
 					dutiesToRemove.add(duty); 
 				}
@@ -523,8 +545,8 @@ public class IntegratedMasterProblem
 		System.out.println("Number of deadruns generated from vehicle subproblem = " + deadrunsGenerated.size());
 		System.out.println("Number of idle times generated from vehicle subproblem = " + idleTimesGenerated.size());
 		
-		List<Deadrun> heuristicDeadruns = new ArrayList<Deadrun>(); 
-		List<IdleTime> heuristicIdleTimesGenerated = new ArrayList<IdleTime>();
+		Set<Deadrun> heuristicDeadruns = new HashSet<Deadrun>(); 
+		Set<IdleTime> heuristicIdleTimesGenerated = new HashSet<IdleTime>();
 		List<Trip> heuristicTrips = new ArrayList<Trip>();
 		if(this.useSubNetwork && !this.useDeadrunsAndIdleTimesInMaster)
 		{
@@ -547,8 +569,6 @@ public class IntegratedMasterProblem
 			}
 				
 			heuristicTrips = heuristicTrips.stream().distinct().collect(Collectors.toList()); 
-			heuristicDeadruns = heuristicDeadruns.stream().distinct().collect(Collectors.toList()); 
-			heuristicIdleTimesGenerated = heuristicIdleTimesGenerated.stream().distinct().collect(Collectors.toList()); 
 		}
 		else if(this.useDeadrunsAndIdleTimesInMaster && this.useSubNetwork)
 		{
@@ -753,25 +773,25 @@ public class IntegratedMasterProblem
 			{
 				this.deadrunLowerLimitLinkingConstraints.put(deadrun, this.cplex.addRange(0, 0, "ctDeadrunLowerLimit_" + deadrun.getDeadrunId())); 
 				
-				IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 10000); 
+				/*IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 10000); 
 				slackBlock = slackBlock.and(this.cplex.column(this.deadrunLowerLimitLinkingConstraints.get(deadrun), -1)); 
 				this.slackDeadrunBlock.put(deadrun, this.cplex.numVar(slackBlock, 0, 1, "slackBlockDeadrun_" + deadrun.getDeadrunId()));
 				
 				IloColumn slackDuty = this.cplex.column(this.cplex.getObjective(), 10000); 
 				slackDuty = slackDuty.and(this.cplex.column(this.deadrunLowerLimitLinkingConstraints.get(deadrun), 1)); 
-				this.slackDeadrunDuty.put(deadrun, this.cplex.numVar(slackDuty, 0, 1, "slackDutyDeadrun_" + deadrun.getDeadrunId()));
+				this.slackDeadrunDuty.put(deadrun, this.cplex.numVar(slackDuty, 0, 1, "slackDutyDeadrun_" + deadrun.getDeadrunId()));*/
 			}
 			else
 			{
 				deadrunLowerLimitLinkingConstraints.put(deadrun, this.cplex.addRange(0, 0, "ctDeadrunLowerLimit_" + deadrun.getDeadrunId()));
 				
-				IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 10000); 
+				/*IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 10000); 
 				slackBlock = slackBlock.and(this.cplex.column(deadrunLowerLimitLinkingConstraints.get(deadrun), -1)); 
 				this.slackDeadrunBlock.put(deadrun, this.cplex.numVar(slackBlock, 0, 1, "slackBlockDeadrun_" + deadrun.getDeadrunId()));
 				
 				IloColumn slackDuty = this.cplex.column(this.cplex.getObjective(), 10000); 
 				slackDuty = slackDuty.and(this.cplex.column(deadrunLowerLimitLinkingConstraints.get(deadrun), 1)); 
-				this.slackDeadrunDuty.put(deadrun, this.cplex.numVar(slackDuty, 0, 1, "slackDutyDeadrun_" + deadrun.getDeadrunId()));
+				this.slackDeadrunDuty.put(deadrun, this.cplex.numVar(slackDuty, 0, 1, "slackDutyDeadrun_" + deadrun.getDeadrunId()));*/
 			}
 			
 		}
@@ -808,25 +828,25 @@ public class IntegratedMasterProblem
 			{
 				this.continousBusAttendanceConstraints.put(idleTime, this.cplex.addRange(0, 0, "ctIdleTime_" + idleTime.getNode().getNodeId() + "_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime())); 
 				
-				IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 10000); 
+				/*IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 10000); 
 				slackBlock = slackBlock.and(this.cplex.column(this.continousBusAttendanceConstraints.get(idleTime), -1)); 
 				this.slackIdleTimeBlock.put(idleTime, this.cplex.numVar(slackBlock, 0, 1, "slackBlockIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));
 				
 				IloColumn slackDuty = this.cplex.column(this.cplex.getObjective(), 10000); 
 				slackDuty  = slackDuty.and(this.cplex.column(this.continousBusAttendanceConstraints.get(idleTime), 1)); 
-				this.slackIdleTimeDuty.put(idleTime, this.cplex.numVar(slackDuty, 0, 1, "slackDutyIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));
+				this.slackIdleTimeDuty.put(idleTime, this.cplex.numVar(slackDuty, 0, 1, "slackDutyIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));*/
 			}
 			else
 			{
 				continuousBusAttendanceConstraints.put(idleTime, this.cplex.addRange(0, 0, "ctIdleTime_" + idleTime.getNode().getNodeId() + "_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime())); 
 				
-				IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 10000); 
+				/*IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 10000); 
 				slackBlock = slackBlock.and(this.cplex.column(continuousBusAttendanceConstraints.get(idleTime), -1)); 
 				this.slackIdleTimeBlock.put(idleTime, this.cplex.numVar(slackBlock, 0, 1, "slackBlockIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));
 				
 				IloColumn slackDuty = this.cplex.column(this.cplex.getObjective(), 10000); 
 				slackDuty  = slackDuty.and(this.cplex.column(continuousBusAttendanceConstraints.get(idleTime), 1)); 
-				this.slackIdleTimeDuty.put(idleTime, this.cplex.numVar(slackDuty, 0, 1, "slackDutyIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));
+				this.slackIdleTimeDuty.put(idleTime, this.cplex.numVar(slackDuty, 0, 1, "slackDutyIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));*/
 			}
 		}
 		

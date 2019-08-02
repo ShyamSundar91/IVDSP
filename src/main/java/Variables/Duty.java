@@ -9,7 +9,7 @@ import lombok.Getter;
 
 @EqualsAndHashCode(of={"dutyType","tripsInDuty", "deadrunsInDuty", "dutyActivities", "idleTimesInDuty", "totalDuration", "totalCostOfDuty"})
 @Getter
-public class Duty 
+public class Duty implements Comparable<Duty> 
 {
 	private int dutyId; 
 	private DutyType dutyType; 
@@ -19,6 +19,9 @@ public class Duty
 	private List<IdleTime> idleTimesInDuty; 
 	private int totalDuration; 
 	private double totalCostOfDuty; 
+	private double deltaOfDuty;
+	private int startTime; 
+	private int endTime; 
 	
 	private static int counter = 1; 
 	
@@ -35,6 +38,9 @@ public class Duty
 		this.totalDuration = this.dutyActivities.stream().mapToInt(d -> d.getDuration()).sum();
 		//int minPaid = Math.max(this.totalDuration, this.dutyType.getMinimumPaidTime()); 
 		this.totalCostOfDuty = (((double)this.totalDuration/(double)60) * this.dutyType.getCostPerHour()) + this.dutyType.getFixedCost(); 
+		this.deltaOfDuty = (this.totalCostOfDuty/(double)(Math.min(1, this.tripsInDuty.size()))); 
+		this.startTime = this.dutyActivities.get(0).getDepartureTime(); 
+		this.endTime = this.dutyActivities.get(this.dutyActivities.size()-1).getArrivalTime(); 
 		
 		this.numberOfIterationsInMP = 0; 
 		this.numberOfTimesChosen = 0; 
@@ -54,6 +60,14 @@ public class Duty
 	public void increaseNumberOfTimesChosen()
 	{
 		this.numberOfTimesChosen++; 
+	}
+
+	public int compareTo(Duty d) {
+		
+		if(this.deltaOfDuty < d.getDeltaOfDuty()) return -1; 
+		if(this.deltaOfDuty > d.getDeltaOfDuty()) return 1; 
+		
+		return 0;
 	}
 
 }

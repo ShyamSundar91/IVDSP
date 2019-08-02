@@ -36,8 +36,8 @@ public class BBNodeDriver
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
 	private Map<Duty, Integer> initialAndDutiesGenerated;
 	private List<Block> blocksInSolution; 
-	private List<Deadrun> deadrunsInSolution; 
-	private List<IdleTime> idleTimesInSolution; 
+	private Set<Deadrun> deadrunsInSolution; 
+	private Set<IdleTime> idleTimesInSolution; 
 	
 	private IloCplex cplex; 
 	private Map<Trip, IloRange> tripsConstraints; 
@@ -56,7 +56,7 @@ public class BBNodeDriver
 	private boolean useSubNetwork; 
 	private double lpObjective; 
 	 
-	public BBNodeDriver(List<Trip> trips, List<Block> blocksInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution,
+	public BBNodeDriver(List<Trip> trips, List<Block> blocksInSolution, Set<Deadrun> deadrunsInSolution, Set<IdleTime> idleTimesInSolution,
 			Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Duty, Integer> initialAndDutiesGenerated, boolean earlyTermination) throws IloException
 	{
 		this.trips = trips; 

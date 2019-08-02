@@ -20,8 +20,10 @@ import Networks.VehicleArc;
 import Networks.VehicleTypeDepot;
 import Networks.VehicleVertex;
 import Variables.Block;
+import Variables.BlockActivity;
 import Variables.Deadrun;
 import Variables.Duty;
+import Variables.DutyActivity;
 import Variables.IdleTime;
 import ilog.concert.IloException;
 import ilog.concert.IloNumVar;
@@ -37,8 +39,8 @@ public class SequentialApproach
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs; 
 	
 	private List<Block> blocksInSolution; 
-	private List<Deadrun> deadrunsInSolution; 
-	private List<IdleTime> idleTimesInSolution; 
+	private Set<Deadrun> deadrunsInSolution; 
+	private Set<IdleTime> idleTimesInSolution; 
 	private List<Duty> dutiesInSolution; 
 	private double totalObjective; 
 	
@@ -63,8 +65,8 @@ public class SequentialApproach
 	{
 		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphs, new HashMap<Block, Integer>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), false);
 		this.blocksInSolution = bbVehicle.getBlocksInSolution();
-		this.deadrunsInSolution = bbVehicle.getDeadrunsInSolution(); 
-		this.idleTimesInSolution = bbVehicle.getIdleTimesInSolution(); 
+		this.deadrunsInSolution = new HashSet<Deadrun>(bbVehicle.getDeadrunsInSolution()); 
+		this.idleTimesInSolution = new HashSet<IdleTime>(bbVehicle.getIdleTimesInSolution()); 
 	}
 	
 	private void driverSchedulingProblem() throws IloException
@@ -104,6 +106,22 @@ public class SequentialApproach
 		for(Duty duty : this.dutiesInSolution)
 		{
 			this.totalObjective = this.totalObjective + duty.getTotalCostOfDuty(); 
+		}
+		
+		for(Block block : blocksInSolution)
+		{
+			for(BlockActivity ba : block.getBlockActivities())
+			{
+				System.out.println(block.getBlockId() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
+			}
+		}
+		
+		for(Duty duty : this.dutiesInSolution)
+		{
+			for(DutyActivity da : duty.getDutyActivities())
+			{
+				System.out.println(duty.getDutyId() + "; " + duty.getTotalDuration() + "; " + duty.getTotalCostOfDuty() + "; " + da.getDepartureNode().getNodeId() + "; " + da.getArrivalNode().getNodeId() + "; " + da.getDepartureTime() + "; " + da.getArrivalTime() + "; " + da.getActivity() + "; " + da.getTripOrDeadrunId());
+			} 
 		}
 		
 		System.out.println("Total objective = " + this.totalObjective);

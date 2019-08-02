@@ -34,8 +34,8 @@ public class DriverRCSPP
 	private Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit; 
 	private Map<IdleTime, Double> dualValuesOfIdleTimes;
 	private List<Trip> tripsInSolution; 
-	private List<Deadrun> deadrunsInSolutions; 
-	private List<IdleTime> idleTimesInSolution; 
+	private Set<Deadrun> deadrunsInSolutions; 
+	private Set<IdleTime> idleTimesInSolution; 
 	
 	private List<DriverVertex> queue; 
 	@Getter
@@ -45,7 +45,7 @@ public class DriverRCSPP
 	private boolean useSubNetwork; 
 	private int allowedBlockChanges; 
 	
-	public DriverRCSPP(DutyType dutyType, DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph,  Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, List<Trip> tripsInSolution,List<Deadrun> deadrunsInSolutions, List<IdleTime> idleTimesInSolution,  boolean allowBlockChange, boolean useSubNetwork)
+	public DriverRCSPP(DutyType dutyType, DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph,  Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, List<Trip> tripsInSolution, Set<Deadrun> deadrunsInSolutions, Set<IdleTime> idleTimesInSolution,  boolean allowBlockChange, boolean useSubNetwork)
 	{
 		this.dutyType = dutyType; 
 		this.driverGraph = driverGraph; 
@@ -106,11 +106,12 @@ public class DriverRCSPP
 			{
 				if(!selectedLabel.isLabelDriverVisited())
 				{
-				
-					if(!selectedLabel.getUpdatedResources().isAttendedBus())
+					//Cannot get this to work for an exact column generation. Have to look at it some other time. 
+					/*if(!selectedLabel.getUpdatedResources().isAttendedBus())
 					{
-						outgoingArcs = outgoingArcs.stream().filter(a -> a.isAttendingBus()).collect(Collectors.toSet()); 
-					}					
+						Set<DriverArc> selected = new HashSet<DriverArc>(outgoingArcs.stream().filter(a -> a.isAttendingBus()).collect(Collectors.toSet()));
+						outgoingArcs = selected; 
+					}*/					
 					
 					for(DriverArc outgoingArc : outgoingArcs)
 					{
@@ -262,6 +263,7 @@ public class DriverRCSPP
 		if(!existingLabels.isEmpty())
 		{
 			boolean notToAddLabel = false;
+			boolean pendingDecision = false;
 			for(LabelDriver existingLabel : existingLabels)
 			{
 				DriverREF existingREF = existingLabel.getUpdatedResources(); 
@@ -328,6 +330,22 @@ public class DriverRCSPP
 					}
 				}
 				
+				/*
+				 * Check if attending bus is dominated
+				 
+				//Cannot get this to work for an exact column generation. Have to look at it some other time. 
+				boolean dominatedAttendingBus = false; 
+				int compare = Boolean.compare(newREF.isAttendedBus(), existingREF.isAttendedBus()); 
+				if(compare <= 0)
+				{
+					dominatedAttendingBus = true; 
+					dominatingDecisions.add(dominatedAttendingBus); 
+				}
+				else
+				{
+					dominatingDecisions.add(dominatedAttendingBus); 
+				}
+				
 				
 				/*
 				 * Check if min duration is dominated
@@ -368,14 +386,18 @@ public class DriverRCSPP
 					}
 				}
 				
-				if(dominated)
+				if(!pendingDecision)
 				{
-					notToAddLabel = true; 
+					if(dominated)
+					{
+						notToAddLabel = true; 
+					}
+					else if(removeExistingLabel)
+					{
+						existingLabelsToBeRemoved.add(existingLabel); 
+					}
 				}
-				else if(removeExistingLabel)
-				{
-					existingLabelsToBeRemoved.add(existingLabel); 
-				}
+				
 			}
 			
 			if(!notToAddLabel)

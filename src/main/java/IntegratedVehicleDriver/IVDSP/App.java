@@ -14,6 +14,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 
 import ALNS.InitialSolutionController;
 import ALNS.LocalSearch;
+import ALNS.SequenceGeneration;
 import BranchPriceDriver.BBNodeDriver;
 import BranchPriceIntegratedVehicleDriver.BranchAndBoundIntegrated;
 import BranchPriceVehicle.BranchAndBoundVehicle;
@@ -113,8 +114,10 @@ public class App
     	Map<Duty, Integer> dutiesGenerated = new HashMap<Duty, Integer>(); // driverGraphgen.getDutiesGenerated(); 
     	System.out.println("***********************************************");
     	
-    	long start = System.currentTimeMillis(); 
+    	
     	InitialSolutionController initial = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
+    	//SequenceGeneration seq = new SequenceGeneration(allTrips, initial.getBlocksInSolution(), initial.getDutiesInSolution()); 
+    	long start = System.currentTimeMillis(); 
     	LocalSearch localSearch = new LocalSearch(allTrips, vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj()); 
     	//blocksGenerated.addAll(initial.getBlocksInSolution()); 
     	//dutiesGenerated.addAll(initial.getDutiesInSolution()); 
@@ -125,8 +128,8 @@ public class App
     		deadrunsInSolution.addAll(block.getDeadrunsInBlock()); 
     		idleTimesInSolution.addAll(block.getIdleTimesInBlock()); 
     	}*/
-    	//IntegratedMasterProblem imp = new IntegratedMasterProblem(allTrips, deadrunsInSolution, idleTimesInSolution,/*allDeadruns, allIdleTimes,*/ vehicleGraphs, driverGraphs, blocksGenerated, dutiesGenerated, true); 
-    	//BranchAndBoundIntegrated bb = new BranchAndBoundIntegrated(allTrips, blocksGenerated, dutiesGenerated, deadrunsInSolution, idleTimesInSolution, vehicleGraphs, driverGraphs, true); 
+    	//IntegratedMasterProblem imp = new IntegratedMasterProblem(allTrips, deadrunsInSolution, idleTimesInSolution, /*allDeadruns, allIdleTimes,*/ vehicleGraphs, driverGraphs, blocksGenerated, dutiesGenerated, false); 
+    	//BranchAndBoundIntegrated bb = new BranchAndBoundIntegrated(allTrips, blocksGenerated, dutiesGenerated, deadrunsInSolution, idleTimesInSolution, vehicleGraphs, driverGraphs, false); 
     	
     	
     	//SequentialApproach seq = new SequentialApproach(allTrips, vehicleGraphs, driverGraphs); 

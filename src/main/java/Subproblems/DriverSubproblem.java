@@ -2,6 +2,7 @@ package Subproblems;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -24,15 +25,15 @@ public class DriverSubproblem
 	private Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit; 
 	private Map<IdleTime, Double> dualValuesOfIdleTimes;
 	private List<Trip> tripsInSolution; 
-	private List<Deadrun> deadrunsInSolution; 
-	private List<IdleTime> idleTimesInSolution; 
+	private Set<Deadrun> deadrunsInSolution; 
+	private Set<IdleTime> idleTimesInSolution; 
 	private boolean allowBlockChange;
 	private boolean useSubNetwork; 
 	@Getter
 	private List<Duty> dutiesGenerated; 
 
 	public DriverSubproblem(int globalIterationNumber, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes,
-			List<Trip> tripsInSolution, List<Deadrun> deadrunsInSolution, List<IdleTime> idleTimesInSolution, boolean allowBlockChange, boolean useSubNetwork)
+			List<Trip> tripsInSolution, Set<Deadrun> deadrunsInSolution, Set<IdleTime> idleTimesInSolution, boolean allowBlockChange, boolean useSubNetwork)
 	{
 		this.globalIterationNumber = globalIterationNumber;  
 		this.driverGraphs = driverGraphs; 

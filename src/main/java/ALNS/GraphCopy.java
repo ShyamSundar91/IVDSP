@@ -1,6 +1,7 @@
 package ALNS;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +16,8 @@ import Networks.DutyTypeDepot;
 import Networks.VehicleArc;
 import Networks.VehicleTypeDepot;
 import Networks.VehicleVertex;
+import Variables.Deadrun;
+import Variables.IdleTime;
 import lombok.Getter;
 
 public class GraphCopy 
@@ -24,24 +27,29 @@ public class GraphCopy
 	private List<Trip> uncoveredTripsOfVehicle;
 	private List<Trip> uncoveredTripsOfDriver; 
 	
+	//Deadruns and Idle times when the block solution is fixed, else empty
+	private Set<Deadrun> deadrunsInSolution; 
+	private Set<IdleTime> idleTimesInSolution; 
+	
 	@Getter
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphsCopy;
 	@Getter
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy;
 	
-	public GraphCopy(Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver)
+	public GraphCopy(Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver, Set<Deadrun> deadrunsInSolution, Set<IdleTime> idleTimesInSolution)
 	{
 		this.vehicleGraphs = vehicleGraphs; 
 		this.driverGraphs = driverGraphs; 
 		this.uncoveredTripsOfVehicle = uncoveredTripsOfVehicle; 
 		this.uncoveredTripsOfDriver = uncoveredTripsOfDriver; 
+		this.deadrunsInSolution = deadrunsInSolution; 
+		this.idleTimesInSolution = idleTimesInSolution; 
 		
 		this.vehicleGraphsCopy = createCopyOfVehicleGraph(); 
 		this.driverGraphsCopy = createCopyOfDriverGraph();
+		
 		removeVehicleArcsBasedOnTrips(this.vehicleGraphsCopy, this.uncoveredTripsOfVehicle);
-		removeDriverArcsBasedOnTrips(this.driverGraphsCopy, this.uncoveredTripsOfDriver); 
-		
-		
+		removeDriverArcsBasedOnTrips(this.driverGraphsCopy, this.uncoveredTripsOfDriver, this.deadrunsInSolution, this.idleTimesInSolution); 
 	}
 	
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> createCopyOfVehicleGraph()
@@ -110,20 +118,38 @@ public class GraphCopy
 		}
 	}
 	
-	private void removeDriverArcsBasedOnTrips(Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy, List<Trip> trips)
+	private void removeDriverArcsBasedOnTrips(Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy, List<Trip> trips, Set<Deadrun> deadrunsInSolution, Set<IdleTime> idleTimesInSolution)
 	{
 		
 		for(DutyTypeDepot dutyTypeDepot : driverGraphsCopy.keySet())
 		{
 			DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph = driverGraphsCopy.get(dutyTypeDepot); 
-			Set<DriverArc> tripArcs = driverGraph.edgeSet().stream().filter(a -> a.getTrip() != null).collect(Collectors.toSet()); 
-			for(DriverArc tripArc : tripArcs)
+			//Set<DriverArc> tripArcs = driverGraph.edgeSet().stream().filter(a -> a.getTrip() != null).collect(Collectors.toSet()); 
+			Set<DriverArc> arcsToRemove = new HashSet<DriverArc>(); 
+			for(DriverArc arc : driverGraph.edgeSet())
 			{
-				if(!trips.contains(tripArc.getTrip()))
+				if(arc.getTrip() != null && !trips.contains(arc.getTrip()))
 				{
-					driverGraph.removeEdge(tripArc); 
+					arcsToRemove.add(arc); 
+				}
+				
+				if(!deadrunsInSolution.isEmpty())
+				{
+					if(arc.getDeadrun() != null && !deadrunsInSolution.contains(arc.getDeadrun()))
+					{
+						arcsToRemove.add(arc);  
+					}
+				}
+				
+				if(!idleTimesInSolution.isEmpty())
+				{
+					if(arc.getIdleTimeOnArc() != null && !idleTimesInSolution.contains(arc.getIdleTimeOnArc()))
+					{
+						arcsToRemove.add(arc); 
+					}
 				}
 			}
+			driverGraph.removeAllEdges(arcsToRemove); 
 		}
 		
 	}

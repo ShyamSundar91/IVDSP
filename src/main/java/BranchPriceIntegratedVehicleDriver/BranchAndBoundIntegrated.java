@@ -46,7 +46,15 @@ public class BranchAndBoundIntegrated
 	@Getter
 	private List<Duty> dutiesInSolution; 
 	@Getter
-	private double objective; 
+	private double objective;
+	@Getter
+	private Map<Trip, Double> tripVehicleDuals; 
+	@Getter
+	private Map<Trip, Double> tripDriverDuals; 
+	@Getter
+	private Map<Deadrun, Double> deadrunDuals;
+	@Getter
+	private Map<IdleTime, Double> idleTimeDuals; 
 	public BranchAndBoundIntegrated(List<Trip> trips, Map<Block, Integer> initialBlocksAndGenerated,  Map<Duty, Integer> initialDutiesAndGenerated, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, boolean earlyTermination) throws IloException
 	{
 		this.trips = trips; 
@@ -82,6 +90,13 @@ public class BranchAndBoundIntegrated
 			System.out.println("Node number = " + nodeNo);
 			BBNodeIntegrated currentNode = this.nodes.get(0); 
 			currentNode.solve();
+			if(nodeNo == 0)
+			{
+				this.tripVehicleDuals = currentNode.getTripVehicleDuals(); 
+				this.tripDriverDuals = currentNode.getTripDriverDuals(); 
+				this.deadrunDuals = currentNode.getDeadrunDuals(); 
+				this.idleTimeDuals = currentNode.getIdleTimeDuals(); 
+			}
 			this.lpObjectivesAtEachNode.put(nodeNo, currentNode.getLpObjective()); 
 			if(!currentNode.isSolutionInteger())
 			{
@@ -170,12 +185,12 @@ public class BranchAndBoundIntegrated
 			totalCost = totalCost + duty.getTotalCostOfDuty(); 
 		}
 		
-		System.out.println("Total cost = " + totalCost);
+		System.out.println("Total cost = " + totalCost);*/
 		
 		for(Integer node : this.lpObjectivesAtEachNode.keySet())
 		{
 			System.out.println(node + "; " + this.lpObjectivesAtEachNode.get(node));
-		}*/
+		}
 		
 		this.blocksInSolution.addAll(blocksInSolution); 
 		this.dutiesInSolution.addAll(dutiesInSolution); 

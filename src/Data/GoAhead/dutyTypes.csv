@@ -1,0 +1,2 @@
+﻿Duty type id;Fixed cost;Cost per hour;Maximum duration (minutes);Minimum paid time (minutes);Minimum break time (minutes);Maximum duration without break (minutes);Maximum number of block changes
+Normal;1000;300;600;270;45;270;1

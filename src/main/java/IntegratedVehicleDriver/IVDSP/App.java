@@ -45,7 +45,7 @@ public class App
     public static void main( String[] args ) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = "/Users/ShyamSundar/Desktop/Integrated vehicle and driver/Data/BAASVestSmall/";
+    	String inputPath = args[0]; // "/Users/ShyamSundar/Desktop/Integrated vehicle and driver/Data/BAASVestSmall/";
     	ReadInstance rd = new ReadInstance(inputPath); 
     	System.out.println("***********************************************");
     	
@@ -115,10 +115,10 @@ public class App
     	System.out.println("***********************************************");
     	
     	
-    	InitialSolutionController initial = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
+    	//InitialSolutionController initial = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
     	//SequenceGeneration seq = new SequenceGeneration(allTrips, initial.getBlocksInSolution(), initial.getDutiesInSolution()); 
     	long start = System.currentTimeMillis(); 
-    	LocalSearch localSearch = new LocalSearch(allTrips, vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj()); 
+    	//LocalSearch localSearch = new LocalSearch(allTrips, vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj()); 
     	//blocksGenerated.addAll(initial.getBlocksInSolution()); 
     	//dutiesGenerated.addAll(initial.getDutiesInSolution()); 
     	Set<Deadrun> deadrunsInSolution = new HashSet<Deadrun>(); 
@@ -128,7 +128,7 @@ public class App
     		deadrunsInSolution.addAll(block.getDeadrunsInBlock()); 
     		idleTimesInSolution.addAll(block.getIdleTimesInBlock()); 
     	}*/
-    	//IntegratedMasterProblem imp = new IntegratedMasterProblem(allTrips, deadrunsInSolution, idleTimesInSolution, /*allDeadruns, allIdleTimes,*/ vehicleGraphs, driverGraphs, blocksGenerated, dutiesGenerated, false); 
+    	IntegratedMasterProblem imp = new IntegratedMasterProblem(allTrips, deadrunsInSolution, idleTimesInSolution, /*allDeadruns, allIdleTimes,*/ vehicleGraphs, driverGraphs, blocksGenerated, dutiesGenerated, false); 
     	//BranchAndBoundIntegrated bb = new BranchAndBoundIntegrated(allTrips, blocksGenerated, dutiesGenerated, deadrunsInSolution, idleTimesInSolution, vehicleGraphs, driverGraphs, false); 
     	
     	

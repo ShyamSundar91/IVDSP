@@ -1,0 +1,12 @@
+﻿Node id;Depot;Minimum idle time (minutes);Maximum idle time (minutes);Driver sign on/off allowed;Driver change allowed;Driver break allowed;;;;
+441;TRUE;-1;-1;FALSE;TRUE;FALSE;;;; 
+7515201;FALSE;2;60;TRUE;TRUE;TRUE;;;;
+161;FALSE;2;60;FALSE;TRUE;TRUE;;;; 
+160;FALSE;2;60;FALSE;TRUE;TRUE;;;; 
+224;FALSE;2;60;FALSE;TRUE;TRUE;;;; 
+225;FALSE;2;60;FALSE;TRUE;TRUE;;;; 
+9;FALSE;2;60;FALSE;TRUE;TRUE;;;; 
+10;FALSE;2;60;FALSE;TRUE;TRUE;;;; 
+289;FALSE;2;60;FALSE;TRUE;TRUE;;;; 
+288;FALSE;2;60;FALSE;TRUE;TRUE;;;; 
+293;FALSE;2;60;FALSE;TRUE;TRUE;;;; 

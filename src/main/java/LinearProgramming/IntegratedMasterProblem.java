@@ -93,6 +93,10 @@ public class IntegratedMasterProblem
 	private Map<Deadrun, Double> deadrunDuals;
 	@Getter
 	private Map<IdleTime, Double> idleTimeDuals; 
+	
+	private double totalTimeOfMaster; 
+	private double totalTimeOfVehicleSub; 
+	private double totalTimeOfDriverSub; 
 	public IntegratedMasterProblem(List<Trip> trips, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Block, Integer> initialBlocksAndGenerated, Map<Duty, Integer> initialDutiesAndGenerated, boolean earlyTermination) throws IloException
 	{
 		this.trips = trips; 
@@ -136,12 +140,18 @@ public class IntegratedMasterProblem
 		addBlockVariables(this.initialBlocksAndGenerated.keySet()); 
 		addDutyVariables(this.initialDutiesAndGenerated.keySet()); 
 		this.lowerBound = new ArrayList<List<Double>>(); 
+		this.totalTimeOfMaster = 0.0; 
+		this.totalTimeOfDriverSub = 0.0; 
+		this.totalTimeOfVehicleSub = 0.0; 
 		
 		columnGeneration(); 
 		for(List<Double> lb : this.lowerBound)
 		{
 			System.out.println(lb.get(0) + "; " + lb.get(1) + "; " + lb.get(2));
 		}
+		System.out.println("Total time spent on solving master problem = " + this.totalTimeOfMaster);
+		System.out.println("Total time spent on solving vehicle subproblem = " + this.totalTimeOfVehicleSub);
+		System.out.println("Total time spent on solving driver subproblem = " + this.totalTimeOfDriverSub);
 		
 		getFractionalValues();  
 		
@@ -177,9 +187,12 @@ public class IntegratedMasterProblem
 			List<Double> iter = new ArrayList<Double>(); 
 			iter.add((double)this.blockVariables.size());
 			iter.add((double)this.dutyVariables.size()); 
+			double startMP = System.currentTimeMillis(); 
 			if(this.cplex.solve())
 			{
 				System.out.println("LP Objective = " + this.cplex.getObjValue());
+				double endtMP = System.currentTimeMillis(); 
+				this.totalTimeOfMaster = this.totalTimeOfMaster + ((endtMP-startMP)/(double)1000) ;
 				this.lpObjective = this.cplex.getObjValue(); 
 				iter.add(this.cplex.getObjValue()); 
 				this.lowerBound.add(iter);  
@@ -206,7 +219,7 @@ public class IntegratedMasterProblem
 					idleTimesDual.replace(idleTime, this.cplex.getDual(this.continousBusAttendanceConstraints.get(idleTime))); 
 				}
 				
-				columnManagement(iterationNumber);
+				//columnManagement(iterationNumber);
 					
 				if(this.useSubNetwork)
 				{
@@ -214,12 +227,12 @@ public class IntegratedMasterProblem
 				}
 				
 				
-				/*long end = System.currentTimeMillis(); 
+				long end = System.currentTimeMillis(); 
 				double totalTime = (end- start)/1000.00; 
-				if(totalTime > 28800)
+				if(totalTime > 172800)
 				{
 					status = 1; 
-				}*/
+				}
 				
 				if(this.earlyTermination && !this.useSubNetwork)
 				{
@@ -259,7 +272,7 @@ public class IntegratedMasterProblem
 			}
 			else
 			{
-				this.cplex.exportModel("cplex_infeasible.lp");
+				//this.cplex.exportModel("cplex_infeasible.lp");
 				throw new IllegalArgumentException();
 			}
 			iterationNumber++; 
@@ -522,8 +535,11 @@ public class IntegratedMasterProblem
 		Set<Deadrun> deadrunsGenerated = new HashSet<Deadrun>(); 
 		Set<IdleTime> idleTimesGenerated = new HashSet<IdleTime>(); 
 		
+		double startVehicleSub = System.currentTimeMillis(); 
 		VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.trips, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, this.allowLineChange, this.useSubNetwork); 
 		blocksGenerated.addAll(vehicleSubproblem.getBlocksGenerated()); 
+		double endVehicleSub = System.currentTimeMillis(); 
+		this.totalTimeOfVehicleSub = this.totalTimeOfVehicleSub + (endVehicleSub - startVehicleSub)/(double)1000; 
 		for(Block block : blocksGenerated)
 		{
 			for(Deadrun deadrun : block.getDeadrunsInBlock())
@@ -579,8 +595,11 @@ public class IntegratedMasterProblem
 		
 		int beforeDeadrunSize = deadrunsGenerated.size(); 
 		int beforeIdleTimeSize = idleTimesGenerated.size(); 
+		double startDriverSub = System.currentTimeMillis(); 
 		DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, heuristicTrips, heuristicDeadruns, heuristicIdleTimesGenerated, this.allowBlockChange, this.useSubNetwork); 
 		dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
+		double endDriverSub = System.currentTimeMillis(); 
+		this.totalTimeOfDriverSub = this.totalTimeOfDriverSub + (endDriverSub - startDriverSub)/(double)1000; 
 		for(Duty duty : dutiesGenerated)
 		{
 			for(Deadrun deadrun : duty.getDeadrunsInDuty())
@@ -739,7 +758,7 @@ public class IntegratedMasterProblem
 		Map<Trip, IloRange> tripVehicleConstraints = new HashMap<Trip, IloRange>(); 
 		for(Trip trip : trips)
 		{
-			tripVehicleConstraints.put(trip, this.cplex.addRange(1, 1, "ctTripVehicle_" + trip.getTripId())); 
+			tripVehicleConstraints.put(trip, this.cplex.addRange(1, Double.MAX_VALUE, "ctTripVehicle_" + trip.getTripId())); 
 			
 			IloColumn slack = this.cplex.column(this.cplex.getObjective(), 10000); 
 			slack = slack.and(this.cplex.column(tripVehicleConstraints.get(trip), 1)); 
@@ -753,7 +772,7 @@ public class IntegratedMasterProblem
 		Map<Trip, IloRange> tripDriverConstraints = new HashMap<Trip, IloRange>(); 
 		for(Trip trip : trips)
 		{
-			tripDriverConstraints.put(trip, this.cplex.addRange(1, 1, "ctTripDriver_" + trip.getTripId())); 
+			tripDriverConstraints.put(trip, this.cplex.addRange(1, Double.MAX_VALUE, "ctTripDriver_" + trip.getTripId())); 
 			
 			IloColumn slack = this.cplex.column(this.cplex.getObjective(), 10000); 
 			slack = slack.and(this.cplex.column(tripDriverConstraints.get(trip), 1)); 

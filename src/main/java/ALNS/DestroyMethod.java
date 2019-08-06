@@ -84,7 +84,7 @@ public class DestroyMethod
 		}
 		else if(chosenDestroyMethod == 1)
 		{
-			worstRemoval(); 
+			randomRemovalOfBlocks();  
 		}
 		else if(chosenDestroyMethod == 2)
 		{
@@ -164,31 +164,13 @@ public class DestroyMethod
 		this.blocksToBeRemoved = new ArrayList<Block>(); 
 	}
 	
-	private void worstRemoval()
+	private void randomRemovalOfBlocks()
 	{
 		this.blocksToBeRemoved = new ArrayList<Block>();
 		
-		SequenceGeneration seq = new SequenceGeneration(this.trips, this.blocksInSolution, this.dutiesInSolution);
-		List<Sequence> sequences = seq.getSequences(); 
 		int numberOfBlocksToRemove = Math.max(2, (int)(this.degreeOfDestruction*this.blocksInSolution.size())); 
-		Collections.shuffle(sequences, this.rnd); 
-		//List<Sequence> sequencesToDestroy = sequences.subList(0, numberOfBlocksToRemove); 
-		//Collections.sort(sequences);
-		/*Collections.reverse(sequences);
-		List<Sequence> sequencesToDestroy = sequences.subList(0, numberOfBlocksToRemove*2);
-		Collections.shuffle(sequencesToDestroy);*/
-		for(Sequence sequence : sequences)
-		{
-			if(!this.blocksToBeRemoved.contains(sequence.getBlockCoveringSequence()))
-			{
-				this.blocksToBeRemoved.add(sequence.getBlockCoveringSequence()); 
-			}
-			
-			if(this.blocksToBeRemoved.size() >= numberOfBlocksToRemove)
-			{
-				break; 
-			}
-		}
+		Collections.shuffle(this.blocksInSolution, this.rnd); 
+		this.blocksToBeRemoved.addAll(this.blocksInSolution.subList(0, numberOfBlocksToRemove)); 
 		
 		//List<Sequence> candidate = sequences.subList(0, 10); 
 		//Collections.shuffle(candidate, this.rnd); 

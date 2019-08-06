@@ -177,8 +177,49 @@ public class RepairMethod
 		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSoution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, false);  
 		this.dutiesInSolution = dsp.getDutiesInSolution(); 
 		this.objective = this.objective + dsp.getObjective(); 
+	}
+	
+	private void repairIntegrated() throws IloException
+	{
+		this.deadrunInSolution = new HashSet<Deadrun>(); 
+		this.idleTimeInSolution = new HashSet<IdleTime>(); 
 		
+		createGraphsCopy();
 		
+		Map<Block, Integer> initialBlocks = new HashMap<Block, Integer>(); 
+		for(Block block : this.intermediateBlockSolution)
+		{
+			initialBlocks.put(block, 1); 
+			this.deadrunInSolution.addAll(block.getDeadrunsInBlock()); 
+			this.idleTimeInSolution.addAll(block.getIdleTimesInBlock()); 
+		}
+		
+		for(Block block : this.blocksRemoved)
+		{
+			initialBlocks.put(block, 0);
+			this.deadrunInSolution.addAll(block.getDeadrunsInBlock());
+			this.idleTimeInSolution.addAll(block.getIdleTimesInBlock());
+		}
+		
+		Map<Duty, Integer> initialDuties = new HashMap<Duty, Integer>();
+		for(Duty duty : this.intermediateDutySolution)
+		{
+			initialDuties.put(duty, 1); 	
+			this.deadrunInSolution.addAll(duty.getDeadrunsInDuty()); 
+			this.idleTimeInSolution.addAll(duty.getIdleTimesInDuty()); 
+		}
+		
+		for(Duty duty : this.dutiesRemoved)
+		{
+			initialDuties.put(duty, 0);
+			this.deadrunInSolution.addAll(duty.getDeadrunsInDuty()); 
+			this.idleTimeInSolution.addAll(duty.getIdleTimesInDuty()); 
+		}
+		
+		BranchAndBoundIntegrated bb = new BranchAndBoundIntegrated(this.allTrips, initialBlocks, initialDuties, this.deadrunInSolution, this.idleTimeInSolution, this.vehicleGraphsCopy, this.driverGraphsCopy, true); 
+		this.objective = bb.getObjective(); 
+		this.blocksInSoution.addAll(bb.getBlocksInSolution()); 
+		this.dutiesInSolution.addAll(bb.getDutiesInSolution()); 
 	}
 	
 	private void createGraphsCopy()

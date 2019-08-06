@@ -255,9 +255,9 @@ public class VehicleRCSPP
 	{
 		List<LabelVehicle> labelsAtSink = new ArrayList<LabelVehicle>(this.sinkVertex.getLabels()); 
 		//System.out.println("Final labels = " + labelsAtSink.size());
-		if(labelsAtSink.size() > 100 && !this.generateAllVariables)
+		if(labelsAtSink.size() > 500 && !this.generateAllVariables)
 		{
-			if(labelsAtSink.size() > 500 && this.useSubNetwork)
+			if(labelsAtSink.size() > 1000 && this.useSubNetwork)
 			{
 				Collections.sort(labelsAtSink);
 				//labelsAtSink = labelsAtSink.subList(0, 1000);
@@ -266,7 +266,7 @@ public class VehicleRCSPP
 			else
 			{
 				Collections.sort(labelsAtSink);
-				labelsAtSink = labelsAtSink.subList(0, 100);
+				labelsAtSink = labelsAtSink.subList(0, 500);
 			}
 			
 		}

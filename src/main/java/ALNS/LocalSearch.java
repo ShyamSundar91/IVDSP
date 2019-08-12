@@ -28,6 +28,8 @@ import lombok.Getter;
 public class LocalSearch 
 {
 	private List<Trip> allTrips; 
+	private Map<Deadrun, Double> deadrunMultipliers; 
+	private Map<IdleTime, Double> idleTimeMultipliers;
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs; 
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
 	@Getter
@@ -49,27 +51,19 @@ public class LocalSearch
 	private int maxIterations;
 	private int segmentSize;
 	
-	private Map<Trip, Double> tripVehicleDuals; 
-	private Map<Trip, Double> tripDriverDuals; 
-	private Map<Deadrun, Double> deadrunDuals;
-	private Map<IdleTime, Double> idleTimeDuals; 
-	
 	private Map<Integer, List<Double>> weightAtEachIteration; 
 	private Map<Integer, List<Integer>> scoreAtEachIteration; 
 	private Map<Integer, List<Double>> objectiveAtEachIteration; 
-	public LocalSearch(List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective) throws IloException
+	public LocalSearch(List<Trip> allTrips, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective) throws IloException
 	{
 		this.allTrips = allTrips; 
+		this.deadrunMultipliers = deadrunMultipliers; 
+		this.idleTimeMultipliers = idleTimeMultipliers; 
 		this.vehicleGraphs = vehicleGraphs; 
 		this.driverGraphs = driverGraphs; 
 		this.bestBlockSolution = new ArrayList<Block>(bestBlockSolution); 
 		this.bestDutySolution = new ArrayList<Duty>(bestDutySolution); 
 		this.bestObjective = bestObjective; 
-		
-		this.tripVehicleDuals = new HashMap<Trip, Double>(); 
-		this.tripDriverDuals = new HashMap<Trip, Double>(); 
-		this.deadrunDuals = new HashMap<Deadrun, Double>(); 
-		this.idleTimeDuals = new HashMap<IdleTime, Double>(); 
 		
 		this.weightAtEachIteration = new HashMap<Integer, List<Double>>(); 
 		this.scoreAtEachIteration = new HashMap<Integer, List<Integer>>(); 
@@ -108,7 +102,7 @@ public class LocalSearch
 		this.score2 = 0; 
 		this.lambda = 0.1; 
 		
-		this.maxIterations = 500; 
+		this.maxIterations = 100; 
 		this.segmentSize = 25; 
 		
 		int numberOfDestroyMethods = 2; 
@@ -134,7 +128,7 @@ public class LocalSearch
 			System.out.println("*****************************************" + " Local search iteration number = " + i + " *****************************************");
 			System.out.println("Selected destroy method = " + selectedDestroyMethod);
 			
-			DestroyMethod destroy = new DestroyMethod(i, selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.tripVehicleDuals, this.tripDriverDuals, this.deadrunDuals, this.idleTimeDuals, this.bestBlockSolution, this.bestDutySolution); 
+			DestroyMethod destroy = new DestroyMethod(i, selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, this.bestBlockSolution, this.bestDutySolution); 
 			List<Block> intermediateBlockSolution = destroy.getBlocksInSolution(); 
 			List<Duty> intermediateDutySolution = destroy.getDutiesInSolution();
 			List<Block> blocksRemoved = destroy.getBlocksToBeRemoved(); 
@@ -144,11 +138,7 @@ public class LocalSearch
 			List<Trip> uncoveredTripsOfVehicle = destroy.getUncoveredTripsOfVehicle();
 			List<Trip> uncoveredTripsOfDriver = destroy.getUncoveredTripsOfDriver(); 
 			
-			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver); 
-			this.tripVehicleDuals = repair.getTripVehicleDuals(); 
-			this.tripDriverDuals = repair.getTripDriverDuals(); 
-			this.deadrunDuals = repair.getDeadrunDuals(); 
-			this.idleTimeDuals = repair.getIdleTimeDuals(); 
+			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver); 
 			
 			if(this.bestObjective - repair.getObjective() > 1e-3)
 			{

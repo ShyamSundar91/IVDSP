@@ -10,31 +10,31 @@ import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
 
+import ALNS.InitialSolutionController;
 import Data.Trip;
+import Data.VehicleTravel;
 import Networks.DriverArc;
 import Networks.DriverVertex;
 import Networks.DutyTypeDepot;
+import Networks.NeighborhoodGraph;
 import Networks.VehicleArc;
 import Networks.VehicleTypeDepot;
 import Networks.VehicleVertex;
 import Subproblems.DriverSubproblem;
 import Subproblems.VehicleSubproblem;
 import Variables.Block;
-import Variables.BlockActivity;
 import Variables.Deadrun;
 import Variables.Duty;
-import Variables.DutyActivity;
 import Variables.IdleTime;
 import ilog.concert.IloColumn;
 import ilog.concert.IloException;
 import ilog.concert.IloNumVar;
-import ilog.concert.IloNumVarType;
 import ilog.concert.IloRange;
 import ilog.cplex.IloCplex;
 import ilog.cplex.IloCplex.UnknownObjectException;
 import lombok.Getter;
 
-public class IntegratedMasterProblem 
+public class Master 
 {
 	@Getter
 	private Map<Block, Integer> initialBlocksAndGenerated;
@@ -42,21 +42,24 @@ public class IntegratedMasterProblem
 	private Map<Duty, Integer> initialDutiesAndGenerated; 
 	@Getter
 	private List<Trip> trips;
+	private Set<VehicleTravel> allVehicleTravels; 
 	@Getter
 	private Set<Deadrun> deadruns;
 	@Getter
 	private Set<IdleTime> idleTimes; 
 	@Getter
+	private List<NeighborhoodGraph> neighborhoodGraphs; 
+	private int selectedNeighborhoodGraph; 
+	@Getter
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs; 
 	@Getter
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
-
 	
+
 	private IloCplex cplex; 
 	private Map<Trip, IloRange> tripVehicleConstraints; 
 	private Map<Trip, IloRange> tripDriverConstraints; 
 	private Map<Deadrun, IloRange> deadrunLowerLimitLinkingConstraints; 
-	private Map<Deadrun, IloRange> deadrunUpperLimitLinkingConstraints; 
 	private Map<IdleTime, IloRange> continousBusAttendanceConstraints; 
 	private Map<Block, IloNumVar> blockVariables; 
 	private Map<Duty, IloNumVar> dutyVariables; 
@@ -76,45 +79,31 @@ public class IntegratedMasterProblem
 	private boolean solutionInteger; 
 	@Getter
 	private double lpObjective; 
-	private boolean earlyTermination; 
+
 	private double previousLpObjective; 
-	private boolean allowLineChange; 
-	private boolean allowBlockChange; 
-	private boolean useSubNetwork; 
-	private boolean useDeadrunsAndIdleTimesInMaster; 
+	private boolean initialSolChanged; 
 	private int noImprovement;
-	private int terminationCriteria; 
-	
-	@Getter
-	private Map<Trip, Double> tripVehicleDuals; 
-	@Getter
-	private Map<Trip, Double> tripDriverDuals; 
-	@Getter
-	private Map<Deadrun, Double> deadrunDuals;
-	@Getter
-	private Map<IdleTime, Double> idleTimeDuals; 
 	
 	private double totalTimeOfMaster; 
 	private double totalTimeOfVehicleSub; 
 	private double totalTimeOfDriverSub; 
-	public IntegratedMasterProblem(List<Trip> trips, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Block, Integer> initialBlocksAndGenerated, Map<Duty, Integer> initialDutiesAndGenerated, boolean earlyTermination) throws IloException
+	public Master(List<Trip> trips, Set<VehicleTravel> allVehicleTravels, List<NeighborhoodGraph> neighborhoodGraphs) throws IloException
 	{
 		this.trips = trips; 
-		this.deadruns = deadruns; 
-		this.idleTimes = idleTimes; 
-		this.vehicleGraphs = vehicleGraphs; 
-		this.driverGraphs = driverGraphs; 
-		this.initialBlocksAndGenerated = initialBlocksAndGenerated; 
-		this.initialDutiesAndGenerated = initialDutiesAndGenerated; 
-	
-		this.earlyTermination = earlyTermination; 
-		this.previousLpObjective = Double.MAX_VALUE; 
-		this.allowLineChange = false; 
-		this.allowBlockChange = false; 
-		this.useDeadrunsAndIdleTimesInMaster = false; 
-		this.useSubNetwork = true;  
+		this.allVehicleTravels = allVehicleTravels; 
+		this.neighborhoodGraphs = neighborhoodGraphs; 
+		this.selectedNeighborhoodGraph = 0; 
+		
+		this.initialBlocksAndGenerated = new HashMap<Block, Integer>();
+		this.initialDutiesAndGenerated = new HashMap<Duty, Integer>(); 
+		this.deadruns = new HashSet<Deadrun>(); 
+		this.idleTimes = new HashSet<IdleTime>(); 
+		
+		selectNeighborhoodGraph(); 
+		getInitialSolution(); 
+		
+
 		this.noImprovement = 0; 
-		this.terminationCriteria = 0; 
 		
 		this.cplex = new IloCplex();
 		this.cplex.addMinimize(); 
@@ -127,15 +116,11 @@ public class IntegratedMasterProblem
 		this.tripVehicleConstraints = addTripVehicleConstraints(this.trips); 
 		this.tripDriverConstraints = addTripDriverVehicleConstraints(this.trips);
 		this.deadrunLowerLimitLinkingConstraints = addDeadrunLowerLimitLinkingConstrains(this.deadruns); 
-		//this.deadrunUpperLimitLinkingConstraints = addDeadrunUpperLimitLinkingConstraints(this.deadruns); 
+
 		this.continousBusAttendanceConstraints = addContinuousBusAttendanceConstraints(this.idleTimes); 
 		this.blockVariables = new HashMap<Block, IloNumVar>(); 
 		this.dutyVariables = new HashMap<Duty, IloNumVar>(); 
-		
-		this.tripVehicleDuals = new HashMap<Trip, Double>(); 
-		this.tripDriverDuals = new HashMap<Trip, Double>(); 
-		this.deadrunDuals = new HashMap<Deadrun, Double>(); 
-		this.idleTimeDuals = new HashMap<IdleTime, Double>(); 
+	
 		
 		addBlockVariables(this.initialBlocksAndGenerated.keySet()); 
 		addDutyVariables(this.initialDutiesAndGenerated.keySet()); 
@@ -156,6 +141,32 @@ public class IntegratedMasterProblem
 		getFractionalValues();  
 		
 		shutCPLEX(); 
+	}
+	
+	private void selectNeighborhoodGraph()
+	{
+		System.out.println("Selected graph = " + this.neighborhoodGraphs.get(this.selectedNeighborhoodGraph).getNeighborhoodType());
+		this.vehicleGraphs = this.neighborhoodGraphs.get(this.selectedNeighborhoodGraph).getVehicleGraphs(); 
+		this.driverGraphs = this.neighborhoodGraphs.get(this.selectedNeighborhoodGraph).getDriverGraphs(); 
+		this.initialSolChanged = false; 
+		this.selectedNeighborhoodGraph++; 
+	}
+	
+	private void getInitialSolution() throws IloException
+	{
+		InitialSolutionController initial = new InitialSolutionController(this.trips, allVehicleTravels, vehicleGraphs, driverGraphs); 
+		for(Block block : initial.getBlocksInSolution())
+		{
+			this.initialBlocksAndGenerated.put(block, 0); 
+			this.deadruns.addAll(block.getDeadrunsInBlock()); 
+			this.idleTimes.addAll(block.getIdleTimesInBlock()); 
+		}
+		for(Duty duty : initial.getDutiesInSolution())
+		{
+			this.initialDutiesAndGenerated.put(duty, 0); 
+		}
+		
+		this.previousLpObjective = initial.getInitialSolutionObj(); 
 	}
 	
 	private void columnGeneration() throws IloException
@@ -210,7 +221,6 @@ public class IntegratedMasterProblem
 					deadrunsLowerLimitDual.put(deadrun, 0.0); 
 					deadrunsUpperLimitDual.put(deadrun, 0.0); 
 					deadrunsLowerLimitDual.replace(deadrun, this.cplex.getDual(this.deadrunLowerLimitLinkingConstraints.get(deadrun))); 
-					//deadrunsUpperLimitDual.replace(deadrun, this.cplex.getDual(this.deadrunUpperLimitLinkingConstraints.get(deadrun))); 
 				}
 				
 				for(IdleTime idleTime : this.idleTimes)
@@ -218,57 +228,58 @@ public class IntegratedMasterProblem
 					idleTimesDual.put(idleTime, 0.0);
 					idleTimesDual.replace(idleTime, this.cplex.getDual(this.continousBusAttendanceConstraints.get(idleTime))); 
 				}
-				
-				//columnManagement(iterationNumber);
-					
-				if(this.useSubNetwork)
-				{
-					autoTuneNetworkSize(this.lpObjective);
-				}
-				
-				
+						
 				long end = System.currentTimeMillis(); 
 				double totalTime = (end- start)/1000.00; 
+				System.out.println(totalTime);
 				if(totalTime > 86400)
 				{
 					status = 1; 
 				}
 				
-				if(this.earlyTermination && !this.useSubNetwork)
+				if(this.initialSolChanged)
 				{
-
 					double change = ((this.previousLpObjective - this.lpObjective)/this.previousLpObjective) * 100.00;
 					if(change < 0.01)
 					{
-						this.terminationCriteria++;  
+						this.noImprovement++;   
 					}
 					else
 					{
-						this.terminationCriteria = 0; 
+						this.noImprovement = 0;  
 					}
-					
-					if(this.terminationCriteria >= 10)
+						
+					if(this.noImprovement >= 25)
 					{
-						status = 1; 
+						if(this.selectedNeighborhoodGraph < this.neighborhoodGraphs.size())
+						{
+							selectNeighborhoodGraph(); 
+						}
 					}
-					
+						
 					this.previousLpObjective = this.lpObjective; 
 				}
+				else
+				{
+					if(this.lpObjective < (this.previousLpObjective-1))
+					{
+						this.initialSolChanged = true; 
+					}
+				}
 				
+				if(this.initialSolChanged)
+				{
+					columnManagement(iterationNumber);
+				}
 			
-				
+			
 				if(status != 1)
 				{
 					status = solveSubproblems(iterationNumber, tripsVehicleDual, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual); 
 				}
 				
-				if(status == 1)
-				{
-					this.tripVehicleDuals.putAll(tripsVehicleDual);
-					this.tripDriverDuals.putAll(tripsDriverDual);
-					this.deadrunDuals.putAll(deadrunsLowerLimitDual);
-					this.idleTimeDuals.putAll(idleTimesDual);
-				}
+				
+				
 			}
 			else
 			{
@@ -447,47 +458,6 @@ public class IntegratedMasterProblem
 		}
 	}
 	
-	private void autoTuneNetworkSize(double currentLpObjective)
-	{
-		double change = ((this.previousLpObjective - currentLpObjective)/this.previousLpObjective) * 100.00;
-		if(change < 1)
-		{
-			noImprovement++; 
-		}
-		else
-		{
-			noImprovement = 0; 
-		}
-		
-		if(noImprovement >= 10)
-		{
-			if(!this.allowBlockChange)
-			{
-				System.out.println("Allow block change");
-				this.allowBlockChange = true; 
-				noImprovement = 0;
-			}
-			else if(!this.allowLineChange)
-			{
-				System.out.println("Allow line change");
-				this.allowLineChange = true; 
-				noImprovement = 0; 
-			}
-			else if(!this.useDeadrunsAndIdleTimesInMaster)
-			{
-				System.out.println("Use Deadruns and idle times in master");
-				this.useDeadrunsAndIdleTimesInMaster = true; 
-				noImprovement = 0;
-			}
-			else if(this.useSubNetwork)
-			{
-				System.out.println("Use full subproblem network");
-				this.useSubNetwork = false; 
-				noImprovement = 0;
-			}
-		}
-		this.previousLpObjective = currentLpObjective; 
-	}
 	
 	private void getFractionalValues() throws UnknownObjectException, IloException
 	{
@@ -536,7 +506,7 @@ public class IntegratedMasterProblem
 		Set<IdleTime> idleTimesGenerated = new HashSet<IdleTime>(); 
 		
 		double startVehicleSub = System.currentTimeMillis(); 
-		VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.trips, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, this.allowLineChange, this.useSubNetwork); 
+		VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.trips, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, true, false); 
 		blocksGenerated.addAll(vehicleSubproblem.getBlocksGenerated()); 
 		double endVehicleSub = System.currentTimeMillis(); 
 		this.totalTimeOfVehicleSub = this.totalTimeOfVehicleSub + (endVehicleSub - startVehicleSub)/(double)1000; 
@@ -564,39 +534,11 @@ public class IntegratedMasterProblem
 		Set<Deadrun> heuristicDeadruns = new HashSet<Deadrun>(); 
 		Set<IdleTime> heuristicIdleTimesGenerated = new HashSet<IdleTime>();
 		List<Trip> heuristicTrips = new ArrayList<Trip>();
-		if(this.useSubNetwork && !this.useDeadrunsAndIdleTimesInMaster)
-		{
-			for(Block block : blocksGenerated)
-			{
-				for(Deadrun deadrun : block.getDeadrunsInBlock())
-				{
-					heuristicDeadruns.add(deadrun); 
-				}
-					
-				for(IdleTime idleTime : block.getIdleTimesInBlock())
-				{
-					heuristicIdleTimesGenerated.add(idleTime); 
-				}
-					
-				for(Trip trip : block.getTripsInBlock())
-				{
-					heuristicTrips.add(trip); 
-				}
-			}
-				
-			heuristicTrips = heuristicTrips.stream().distinct().collect(Collectors.toList()); 
-		}
-		else if(this.useDeadrunsAndIdleTimesInMaster && this.useSubNetwork)
-		{
-			heuristicTrips.addAll(this.trips); 
-			heuristicDeadruns.addAll(this.deadruns); 
-			heuristicIdleTimesGenerated.addAll(this.idleTimes); 
-		}
 		
 		int beforeDeadrunSize = deadrunsGenerated.size(); 
 		int beforeIdleTimeSize = idleTimesGenerated.size(); 
 		double startDriverSub = System.currentTimeMillis(); 
-		DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, heuristicTrips, heuristicDeadruns, heuristicIdleTimesGenerated, this.allowBlockChange, this.useSubNetwork); 
+		DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, heuristicTrips, heuristicDeadruns, heuristicIdleTimesGenerated, true, false); 
 		dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
 		double endDriverSub = System.currentTimeMillis(); 
 		this.totalTimeOfDriverSub = this.totalTimeOfDriverSub + (endDriverSub - startDriverSub)/(double)1000; 
@@ -626,7 +568,6 @@ public class IntegratedMasterProblem
 		{
 			this.deadruns.addAll(deadrunsGenerated); 
 			addDeadrunLowerLimitLinkingConstrains(deadrunsGenerated); 
-			//addDeadrunUpperLimitLinkingConstraints(deadrunsGenerated); 
 		}
 		
 		if(!idleTimesGenerated.isEmpty())
@@ -656,26 +597,14 @@ public class IntegratedMasterProblem
 		
 		if(blocksGenerated.isEmpty() && dutiesGenerated.isEmpty())
 		{
-			if(!this.allowBlockChange)
+			if(this.selectedNeighborhoodGraph < this.neighborhoodGraphs.size())
 			{
-				System.out.println("Allow block change");
-				this.allowBlockChange = true; 
-			}
-			else if(!this.allowLineChange)
-			{
-				System.out.println("Allow line change");
-				this.allowLineChange = true; 
-			}
-			else if(this.useSubNetwork)
-			{
-				System.out.println("Use full subproblem network");
-				this.useSubNetwork = false; 
+				selectNeighborhoodGraph(); 
 			}
 			else
 			{
-				status = 1; 
+				status = 1;
 			}
-			
 		}
 		
 		return status; 
@@ -696,8 +625,6 @@ public class IntegratedMasterProblem
 			for(Deadrun deadrun : block.getDeadrunsInBlock())
 			{
 				blockVariable = blockVariable.and(this.cplex.column(this.deadrunLowerLimitLinkingConstraints.get(deadrun), -1)); 
-				
-				//blockVariable = blockVariable.and(this.cplex.column(this.deadrunUpperLimitLinkingConstraints.get(deadrun), -2)); 
 			}
 			
 			for(IdleTime idleTime : block.getIdleTimesInBlock())
@@ -732,8 +659,7 @@ public class IntegratedMasterProblem
 			for(Deadrun deadrun : duty.getDeadrunsInDuty())
 			{
 				dutyVariable = dutyVariable.and(this.cplex.column(this.deadrunLowerLimitLinkingConstraints.get(deadrun), 1)); 
-				
-				//dutyVariable = dutyVariable.and(this.cplex.column(this.deadrunUpperLimitLinkingConstraints.get(deadrun), 1)); 
+
 			}
 			
 			for(IdleTime idleTime : duty.getIdleTimesInDuty())
@@ -758,7 +684,7 @@ public class IntegratedMasterProblem
 		Map<Trip, IloRange> tripVehicleConstraints = new HashMap<Trip, IloRange>(); 
 		for(Trip trip : trips)
 		{
-			tripVehicleConstraints.put(trip, this.cplex.addRange(1, 1, "ctTripVehicle_" + trip.getTripId())); 
+			tripVehicleConstraints.put(trip, this.cplex.addRange(1, Double.MAX_VALUE, "ctTripVehicle_" + trip.getTripId())); 
 			
 			IloColumn slack = this.cplex.column(this.cplex.getObjective(), 10000); 
 			slack = slack.and(this.cplex.column(tripVehicleConstraints.get(trip), 1)); 
@@ -772,7 +698,7 @@ public class IntegratedMasterProblem
 		Map<Trip, IloRange> tripDriverConstraints = new HashMap<Trip, IloRange>(); 
 		for(Trip trip : trips)
 		{
-			tripDriverConstraints.put(trip, this.cplex.addRange(1, 1, "ctTripDriver_" + trip.getTripId())); 
+			tripDriverConstraints.put(trip, this.cplex.addRange(1, Double.MAX_VALUE, "ctTripDriver_" + trip.getTripId())); 
 			
 			IloColumn slack = this.cplex.column(this.cplex.getObjective(), 10000); 
 			slack = slack.and(this.cplex.column(tripDriverConstraints.get(trip), 1)); 
@@ -790,27 +716,27 @@ public class IntegratedMasterProblem
 		{
 			if(this.deadrunLowerLimitLinkingConstraints != null)
 			{
-				this.deadrunLowerLimitLinkingConstraints.put(deadrun, this.cplex.addRange(0, 0, "ctDeadrunLowerLimit_" + deadrun.getDeadrunId())); 
+				this.deadrunLowerLimitLinkingConstraints.put(deadrun, this.cplex.addRange(0, Double.MAX_VALUE, "ctDeadrunLowerLimit_" + deadrun.getDeadrunId())); 
 				
-				IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 1000); 
+				/*IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 1000); 
 				slackBlock = slackBlock.and(this.cplex.column(this.deadrunLowerLimitLinkingConstraints.get(deadrun), -1)); 
 				this.slackDeadrunBlock.put(deadrun, this.cplex.numVar(slackBlock, 0, 1, "slackBlockDeadrun_" + deadrun.getDeadrunId()));
 				
 				IloColumn slackDuty = this.cplex.column(this.cplex.getObjective(), 1000); 
 				slackDuty = slackDuty.and(this.cplex.column(this.deadrunLowerLimitLinkingConstraints.get(deadrun), 1)); 
-				this.slackDeadrunDuty.put(deadrun, this.cplex.numVar(slackDuty, 0, 1, "slackDutyDeadrun_" + deadrun.getDeadrunId()));
+				this.slackDeadrunDuty.put(deadrun, this.cplex.numVar(slackDuty, 0, 1, "slackDutyDeadrun_" + deadrun.getDeadrunId()));*/
 			}
 			else
 			{
-				deadrunLowerLimitLinkingConstraints.put(deadrun, this.cplex.addRange(0, 0, "ctDeadrunLowerLimit_" + deadrun.getDeadrunId()));
+				deadrunLowerLimitLinkingConstraints.put(deadrun, this.cplex.addRange(0, Double.MAX_VALUE, "ctDeadrunLowerLimit_" + deadrun.getDeadrunId()));
 				
-				IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 1000); 
+				/*IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 1000); 
 				slackBlock = slackBlock.and(this.cplex.column(deadrunLowerLimitLinkingConstraints.get(deadrun), -1)); 
 				this.slackDeadrunBlock.put(deadrun, this.cplex.numVar(slackBlock, 0, 1, "slackBlockDeadrun_" + deadrun.getDeadrunId()));
 				
 				IloColumn slackDuty = this.cplex.column(this.cplex.getObjective(), 1000); 
 				slackDuty = slackDuty.and(this.cplex.column(deadrunLowerLimitLinkingConstraints.get(deadrun), 1)); 
-				this.slackDeadrunDuty.put(deadrun, this.cplex.numVar(slackDuty, 0, 1, "slackDutyDeadrun_" + deadrun.getDeadrunId()));
+				this.slackDeadrunDuty.put(deadrun, this.cplex.numVar(slackDuty, 0, 1, "slackDutyDeadrun_" + deadrun.getDeadrunId()));*/
 			}
 			
 		}
@@ -818,24 +744,6 @@ public class IntegratedMasterProblem
 		return deadrunLowerLimitLinkingConstraints; 
 	}
 	
-	private Map<Deadrun, IloRange> addDeadrunUpperLimitLinkingConstraints(Set<Deadrun> deadruns) throws IloException
-	{
-		Map<Deadrun, IloRange> deadrunUpperLimitLinkingConstraints = new HashMap<Deadrun, IloRange>(); 
-		
-		for(Deadrun deadrun : deadruns)
-		{
-			if(this.deadrunUpperLimitLinkingConstraints != null)
-			{
-				this.deadrunUpperLimitLinkingConstraints.put(deadrun, this.cplex.addRange(-Double.MAX_VALUE, 0, "ctDeadrunUpperLimit_" + deadrun.getDeadrunId())); 
-			}
-			else
-			{
-				deadrunUpperLimitLinkingConstraints.put(deadrun, this.cplex.addRange(-Double.MAX_VALUE, 0, "ctDeadrunUpperLimit_" + deadrun.getDeadrunId())); 
-			}
-		}
-		
-		return deadrunUpperLimitLinkingConstraints; 
-	}
 	
 	private Map<IdleTime, IloRange> addContinuousBusAttendanceConstraints(Set<IdleTime> idleTimes) throws IloException
 	{
@@ -845,27 +753,27 @@ public class IntegratedMasterProblem
 		{
 			if(this.continousBusAttendanceConstraints != null)
 			{
-				this.continousBusAttendanceConstraints.put(idleTime, this.cplex.addRange(0, 0, "ctIdleTime_" + idleTime.getNode().getNodeId() + "_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime())); 
+				this.continousBusAttendanceConstraints.put(idleTime, this.cplex.addRange(0, Double.MAX_VALUE, "ctIdleTime_" + idleTime.getNode().getNodeId() + "_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime())); 
 				
-				IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 1000); 
+				/*IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 1000); 
 				slackBlock = slackBlock.and(this.cplex.column(this.continousBusAttendanceConstraints.get(idleTime), -1)); 
 				this.slackIdleTimeBlock.put(idleTime, this.cplex.numVar(slackBlock, 0, 1, "slackBlockIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));
 				
 				IloColumn slackDuty = this.cplex.column(this.cplex.getObjective(), 1000); 
 				slackDuty  = slackDuty.and(this.cplex.column(this.continousBusAttendanceConstraints.get(idleTime), 1)); 
-				this.slackIdleTimeDuty.put(idleTime, this.cplex.numVar(slackDuty, 0, 1, "slackDutyIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));
+				this.slackIdleTimeDuty.put(idleTime, this.cplex.numVar(slackDuty, 0, 1, "slackDutyIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));*/
 			}
 			else
 			{
-				continuousBusAttendanceConstraints.put(idleTime, this.cplex.addRange(0, 0, "ctIdleTime_" + idleTime.getNode().getNodeId() + "_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime())); 
+				continuousBusAttendanceConstraints.put(idleTime, this.cplex.addRange(0, Double.MAX_VALUE, "ctIdleTime_" + idleTime.getNode().getNodeId() + "_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime())); 
 				
-				IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 1000); 
+				/*IloColumn slackBlock = this.cplex.column(this.cplex.getObjective(), 1000); 
 				slackBlock = slackBlock.and(this.cplex.column(continuousBusAttendanceConstraints.get(idleTime), -1)); 
 				this.slackIdleTimeBlock.put(idleTime, this.cplex.numVar(slackBlock, 0, 1, "slackBlockIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));
 				
 				IloColumn slackDuty = this.cplex.column(this.cplex.getObjective(), 1000); 
 				slackDuty  = slackDuty.and(this.cplex.column(continuousBusAttendanceConstraints.get(idleTime), 1)); 
-				this.slackIdleTimeDuty.put(idleTime, this.cplex.numVar(slackDuty, 0, 1, "slackDutyIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));
+				this.slackIdleTimeDuty.put(idleTime, this.cplex.numVar(slackDuty, 0, 1, "slackDutyIdleTime_" + idleTime.getDepartureTime() + "_" + idleTime.getArrivalTime()));*/
 			}
 		}
 		
@@ -876,5 +784,5 @@ public class IntegratedMasterProblem
 	{
 		this.cplex.end();
 	}
-	
+
 }

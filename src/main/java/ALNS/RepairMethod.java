@@ -16,6 +16,7 @@ import Data.Trip;
 import Networks.DriverArc;
 import Networks.DriverVertex;
 import Networks.DutyTypeDepot;
+import Networks.GraphCopy;
 import Networks.VehicleArc;
 import Networks.VehicleTypeDepot;
 import Networks.VehicleVertex;
@@ -53,22 +54,18 @@ public class RepairMethod
 	private List<Duty> dutiesInSolution; 
 	@Getter
 	private double objective; 
+
+	private Map<Deadrun, Double> deadrunMultipliers;
+	private Map<IdleTime, Double> idleTimeMultipliers; 
 	
-	@Getter
-	private Map<Trip, Double> tripVehicleDuals; 
-	@Getter
-	private Map<Trip, Double> tripDriverDuals; 
-	@Getter
-	private Map<Deadrun, Double> deadrunDuals;
-	@Getter
-	private Map<IdleTime, Double> idleTimeDuals; 
-	
-	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver) throws IloException
+	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver) throws IloException
 	{
 		this.chosenDestroyMethod = chosenDestroyMethod; 
 		this.allTrips = allTrips; 
 		this.vehicleGraphs = vehicleGraphs; 
 		this.driverGraphs = driverGraphs; 
+		this.deadrunMultipliers = deadrunMultipliers; 
+		this.idleTimeMultipliers = idleTimeMultipliers; 
 		
 		this.intermediateBlockSolution = intermediateBlockSolution; 
 		this.intermediateDutySolution = intermediateDutySolution; 
@@ -89,9 +86,14 @@ public class RepairMethod
 		{
 			repairDriverSchedulingProblem(); 
 		}
-		if(this.chosenDestroyMethod == 1)
+		else if(this.chosenDestroyMethod == 1)
 		{
 			repairVehicleAndDriverSequentially(); 
+			 
+		}
+		else
+		{
+			repairIntegrated();
 		}
 		  
 	}
@@ -142,11 +144,14 @@ public class RepairMethod
 		
 		
 		this.objective = 0; 
-		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), false);
+		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks, this.deadrunMultipliers, this.idleTimeMultipliers, false);
 		this.blocksInSoution.addAll(bbVehicle.getBlocksInSolution()); 
 		this.deadrunInSolution.addAll(bbVehicle.getDeadrunsInSolution()); 
 		this.idleTimeInSolution.addAll(bbVehicle.getIdleTimesInSolution()); 
-		this.objective = this.objective + bbVehicle.getObjective(); 
+		for(Block block : this.blocksInSoution)
+		{
+			this.objective = this.objective + block.getTotalCostOfBlock(); 
+		} 
 		
 		for(DutyTypeDepot dutyTypeDepot : this.driverGraphsCopy.keySet())
 		{
@@ -204,7 +209,7 @@ public class RepairMethod
 		Map<Duty, Integer> initialDuties = new HashMap<Duty, Integer>();
 		for(Duty duty : this.intermediateDutySolution)
 		{
-			initialDuties.put(duty, 1); 	
+			initialDuties.put(duty, 0); 	
 			this.deadrunInSolution.addAll(duty.getDeadrunsInDuty()); 
 			this.idleTimeInSolution.addAll(duty.getIdleTimesInDuty()); 
 		}
@@ -224,6 +229,10 @@ public class RepairMethod
 	
 	private void createGraphsCopy()
 	{
+		if(this.uncoveredTripsOfDriver.isEmpty())
+		{
+			this.uncoveredTripsOfDriver.addAll(this.allTrips); 
+		}
 		GraphCopy graphCopy = new GraphCopy(this.vehicleGraphs, this.driverGraphs, this.uncoveredTripsOfVehicle, this.uncoveredTripsOfDriver, this.deadrunInSolution, this.idleTimeInSolution);
 		this.vehicleGraphsCopy = graphCopy.getVehicleGraphsCopy(); 
 		this.driverGraphsCopy = graphCopy.getDriverGraphsCopy(); 

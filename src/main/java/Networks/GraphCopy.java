@@ -1,4 +1,4 @@
-package ALNS;
+package Networks;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,12 +10,6 @@ import java.util.stream.Collectors;
 import org.jgrapht.graph.DefaultDirectedGraph;
 
 import Data.Trip;
-import Networks.DriverArc;
-import Networks.DriverVertex;
-import Networks.DutyTypeDepot;
-import Networks.VehicleArc;
-import Networks.VehicleTypeDepot;
-import Networks.VehicleVertex;
 import Variables.Deadrun;
 import Variables.IdleTime;
 import lombok.Getter;

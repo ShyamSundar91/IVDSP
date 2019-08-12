@@ -36,9 +36,19 @@ public class Duty implements Comparable<Duty>
 		this.dutyActivities = dutyActivities; 
 		this.idleTimesInDuty = idleTimesInDuty; 
 		this.totalDuration = this.dutyActivities.stream().mapToInt(d -> d.getDuration()).sum();
-		//int minPaid = Math.max(this.totalDuration, this.dutyType.getMinimumPaidTime()); 
 		this.totalCostOfDuty = (((double)this.totalDuration/(double)60) * this.dutyType.getCostPerHour()) + this.dutyType.getFixedCost(); 
-		this.deltaOfDuty = (this.totalCostOfDuty/(double)(Math.min(1, this.tripsInDuty.size()))); 
+		int totalDrivingDuration = 0; 
+		for(Trip trip : this.tripsInDuty)
+		{
+			totalDrivingDuration = totalDrivingDuration + (trip.getArrivalTime() - trip.getArrivalTime()); 
+		}
+		
+		for(Deadrun deadrun : this.deadrunsInDuty)
+		{
+			totalDrivingDuration = totalDrivingDuration + (deadrun.getArrivalTime() - deadrun.getDepartureTime()); 
+		}
+		
+		this.deltaOfDuty = (this.totalCostOfDuty/(double)(totalDrivingDuration)) ; 
 		this.startTime = this.dutyActivities.get(0).getDepartureTime(); 
 		this.endTime = this.dutyActivities.get(this.dutyActivities.size()-1).getArrivalTime(); 
 		

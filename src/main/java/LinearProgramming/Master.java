@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import org.jgrapht.graph.DefaultDirectedGraph;
 
 import ALNS.InitialSolutionController;
+import ALNS.LocalSearch;
 import Data.Trip;
 import Data.VehicleTravel;
 import Networks.DriverArc;
@@ -86,7 +87,13 @@ public class Master
 	
 	private double totalTimeOfMaster; 
 	private double totalTimeOfVehicleSub; 
-	private double totalTimeOfDriverSub; 
+	private double totalTimeOfDriverSub;
+	private double totalTimeOfLocalSearch; 
+	
+	private List<Block> bestBlockSolution; 
+	private List<Duty> bestDutySolution;
+	private double bestObjective; 
+	private boolean performedLocalSearch; 
 	public Master(List<Trip> trips, Set<VehicleTravel> allVehicleTravels, List<NeighborhoodGraph> neighborhoodGraphs) throws IloException
 	{
 		this.trips = trips; 
@@ -98,6 +105,11 @@ public class Master
 		this.initialDutiesAndGenerated = new HashMap<Duty, Integer>(); 
 		this.deadruns = new HashSet<Deadrun>(); 
 		this.idleTimes = new HashSet<IdleTime>(); 
+		
+		this.bestBlockSolution = new ArrayList<Block>(); 
+		this.bestDutySolution = new ArrayList<Duty>(); 
+		this.bestObjective = Double.MAX_VALUE; 
+		this.performedLocalSearch = false; 
 		
 		selectNeighborhoodGraph(); 
 		getInitialSolution(); 
@@ -128,16 +140,23 @@ public class Master
 		this.totalTimeOfMaster = 0.0; 
 		this.totalTimeOfDriverSub = 0.0; 
 		this.totalTimeOfVehicleSub = 0.0; 
+		this.totalTimeOfLocalSearch = 0.0; 
 		
 		columnGeneration(); 
 		for(List<Double> lb : this.lowerBound)
 		{
-			System.out.println(lb.get(0) + "; " + lb.get(1) + "; " + lb.get(2));
+			for(Double l : lb)
+			{
+				System.out.print(l + "; ");
+			}
+			System.out.println();
 		}
 		System.out.println("Total time spent on solving master problem = " + this.totalTimeOfMaster);
 		System.out.println("Total time spent on solving vehicle subproblem = " + this.totalTimeOfVehicleSub);
 		System.out.println("Total time spent on solving driver subproblem = " + this.totalTimeOfDriverSub);
+		System.out.println("Total time spent on local search = " + this.totalTimeOfLocalSearch);
 		
+		System.out.println("Best objective from local search = " + this.bestObjective + ", Number of blocks = " + this.bestBlockSolution.size() + ", Number of duties = " + this.bestDutySolution.size());
 		getFractionalValues();  
 		
 		shutCPLEX(); 
@@ -149,6 +168,7 @@ public class Master
 		this.vehicleGraphs = this.neighborhoodGraphs.get(this.selectedNeighborhoodGraph).getVehicleGraphs(); 
 		this.driverGraphs = this.neighborhoodGraphs.get(this.selectedNeighborhoodGraph).getDriverGraphs(); 
 		this.initialSolChanged = false; 
+		this.noImprovement = 0; 
 		this.selectedNeighborhoodGraph++; 
 	}
 	
@@ -167,6 +187,10 @@ public class Master
 		}
 		
 		this.previousLpObjective = initial.getInitialSolutionObj(); 
+		
+		this.bestBlockSolution.addAll(initial.getBlocksInSolution()); 
+		this.bestDutySolution.addAll(initial.getDutiesInSolution()); 
+		this.bestObjective = initial.getInitialSolutionObj(); 
 	}
 	
 	private void columnGeneration() throws IloException
@@ -196,6 +220,8 @@ public class Master
 			Map<IdleTime, Double> idleTimesDual = new HashMap<IdleTime, Double>();
 			
 			List<Double> iter = new ArrayList<Double>(); 
+			iter.add((double)this.selectedNeighborhoodGraph);
+			iter.add(this.bestObjective); 
 			iter.add((double)this.blockVariables.size());
 			iter.add((double)this.dutyVariables.size()); 
 			double startMP = System.currentTimeMillis(); 
@@ -206,7 +232,13 @@ public class Master
 				this.totalTimeOfMaster = this.totalTimeOfMaster + ((endtMP-startMP)/(double)1000) ;
 				this.lpObjective = this.cplex.getObjValue(); 
 				iter.add(this.cplex.getObjValue()); 
-				this.lowerBound.add(iter);  
+				
+				if(this.performedLocalSearch)
+				{
+					this.initialSolChanged = false; 
+					this.noImprovement = 0; 
+					this.previousLpObjective = this.lpObjective; 
+				}
 				
 				for(Trip trip : this.trips)
 				{
@@ -231,8 +263,10 @@ public class Master
 						
 				long end = System.currentTimeMillis(); 
 				double totalTime = (end- start)/1000.00; 
+				iter.add(totalTime); 
+				this.lowerBound.add(iter); 
 				System.out.println(totalTime);
-				if(totalTime > 86400)
+				if(totalTime > 28800)
 				{
 					status = 1; 
 				}
@@ -267,7 +301,7 @@ public class Master
 					}
 				}
 				
-				if(this.initialSolChanged)
+				//if(this.initialSolChanged)
 				{
 					columnManagement(iterationNumber);
 				}
@@ -312,7 +346,7 @@ public class Master
 			}
 		}
 		
-		if(iteration != 0 && iteration%100 == 0)
+		if(iteration != 0 && iteration%100 == 0 && this.initialSolChanged)
 		{
 			List<Block> blocksToRemove = new ArrayList<Block>(); 
 			List<Duty> dutiesToRemove = new ArrayList<Duty>(); 
@@ -499,69 +533,138 @@ public class Master
 	private int solveSubproblems(int iterationNumber, Map<Trip, Double> tripsVehicleDual, Map<Trip, Double> tripsDriverDual, Map<Deadrun, Double> deadrunsLowerLimitDual, Map<Deadrun, Double> deadrunsUpperLimitDual, Map<IdleTime, Double> idleTimesDual) throws IloException
 	{
 		int status = 0; 
+		this.performedLocalSearch = false;
 		Set<Block> blocksGenerated = new HashSet<Block>(); 
 		Set<Duty> dutiesGenerated = new HashSet<Duty>(); 
 		
 		Set<Deadrun> deadrunsGenerated = new HashSet<Deadrun>(); 
 		Set<IdleTime> idleTimesGenerated = new HashSet<IdleTime>(); 
 		
-		double startVehicleSub = System.currentTimeMillis(); 
-		VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.trips, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, true, false); 
-		blocksGenerated.addAll(vehicleSubproblem.getBlocksGenerated()); 
-		double endVehicleSub = System.currentTimeMillis(); 
-		this.totalTimeOfVehicleSub = this.totalTimeOfVehicleSub + (endVehicleSub - startVehicleSub)/(double)1000; 
-		for(Block block : blocksGenerated)
+		if(iterationNumber != 0 && iterationNumber%50 == 0)
 		{
-			for(Deadrun deadrun : block.getDeadrunsInBlock())
+			this.performedLocalSearch = true;
+			double startLocal = System.currentTimeMillis(); 
+			LocalSearch localSearch = new LocalSearch(this.trips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),  this.vehicleGraphs, this.driverGraphs, this.bestBlockSolution, this.bestDutySolution, this.bestObjective); 
+			double endLocal = System.currentTimeMillis(); 
+			this.totalTimeOfLocalSearch = this.totalTimeOfLocalSearch + (endLocal - startLocal)/(double)1000; 
+			if(localSearch.getBestObjective() < this.bestObjective)
 			{
-				if(!this.deadruns.contains(deadrun) && !deadrunsGenerated.contains(deadrun))
+				this.bestObjective = localSearch.getBestObjective();
+				this.bestBlockSolution.clear();
+				this.bestBlockSolution.addAll(localSearch.getBestBlockSolution()); 
+				this.bestDutySolution.clear();
+				this.bestDutySolution.addAll(localSearch.getBestDutySolution()); 
+				for(Block block : localSearch.getBestBlockSolution())
 				{
-					deadrunsGenerated.add(deadrun); 
+					if(!this.blockVariables.containsKey(block))
+					{
+						blocksGenerated.add(block); 
+						
+						for(Deadrun deadrun : block.getDeadrunsInBlock())
+						{
+							if(!this.deadruns.contains(deadrun) && !deadrunsGenerated.contains(deadrun))
+							{
+								deadrunsGenerated.add(deadrun); 
+							}
+						}
+							
+						for(IdleTime idleTime : block.getIdleTimesInBlock())
+						{
+							if(!this.idleTimes.contains(idleTime) && !idleTimesGenerated.contains(idleTime))
+							{
+								idleTimesGenerated.add(idleTime); 
+							}
+						}
+					}
 				}
-			}
 				
-			for(IdleTime idleTime : block.getIdleTimesInBlock())
-			{
-				if(!this.idleTimes.contains(idleTime) && !idleTimesGenerated.contains(idleTime))
+				for(Duty duty : localSearch.getBestDutySolution())
 				{
-					idleTimesGenerated.add(idleTime); 
+					if(!this.dutyVariables.containsKey(duty))
+					{
+						dutiesGenerated.add(duty); 
+						
+						for(Deadrun deadrun : duty.getDeadrunsInDuty())
+						{
+							if(!this.deadruns.contains(deadrun) && !deadrunsGenerated.contains(deadrun))
+							{
+								deadrunsGenerated.add(deadrun); 
+							}
+						}
+							
+						for(IdleTime idleTime : duty.getIdleTimesInDuty())
+						{
+							if(!this.idleTimes.contains(idleTime) && !idleTimesGenerated.contains(idleTime))
+							{
+								idleTimesGenerated.add(idleTime); 
+							}
+						}
+					}
 				}
 			}
 		}
-		System.out.println("Number of deadruns generated from vehicle subproblem = " + deadrunsGenerated.size());
-		System.out.println("Number of idle times generated from vehicle subproblem = " + idleTimesGenerated.size());
-		
-		Set<Deadrun> heuristicDeadruns = new HashSet<Deadrun>(); 
-		Set<IdleTime> heuristicIdleTimesGenerated = new HashSet<IdleTime>();
-		List<Trip> heuristicTrips = new ArrayList<Trip>();
-		
-		int beforeDeadrunSize = deadrunsGenerated.size(); 
-		int beforeIdleTimeSize = idleTimesGenerated.size(); 
-		double startDriverSub = System.currentTimeMillis(); 
-		DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, heuristicTrips, heuristicDeadruns, heuristicIdleTimesGenerated, true, false); 
-		dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
-		double endDriverSub = System.currentTimeMillis(); 
-		this.totalTimeOfDriverSub = this.totalTimeOfDriverSub + (endDriverSub - startDriverSub)/(double)1000; 
-		for(Duty duty : dutiesGenerated)
+		else
 		{
-			for(Deadrun deadrun : duty.getDeadrunsInDuty())
+			double startVehicleSub = System.currentTimeMillis(); 
+			VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.trips, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, true, false); 
+			blocksGenerated.addAll(vehicleSubproblem.getBlocksGenerated()); 
+			double endVehicleSub = System.currentTimeMillis(); 
+			this.totalTimeOfVehicleSub = this.totalTimeOfVehicleSub + (endVehicleSub - startVehicleSub)/(double)1000; 
+			for(Block block : blocksGenerated)
 			{
-				if(!this.deadruns.contains(deadrun) && !deadrunsGenerated.contains(deadrun))
+				for(Deadrun deadrun : block.getDeadrunsInBlock())
 				{
-					deadrunsGenerated.add(deadrun); 
+					if(!this.deadruns.contains(deadrun) && !deadrunsGenerated.contains(deadrun))
+					{
+						deadrunsGenerated.add(deadrun); 
+					}
+				}
+					
+				for(IdleTime idleTime : block.getIdleTimesInBlock())
+				{
+					if(!this.idleTimes.contains(idleTime) && !idleTimesGenerated.contains(idleTime))
+					{
+						idleTimesGenerated.add(idleTime); 
+					}
 				}
 			}
-				
-			for(IdleTime idleTime : duty.getIdleTimesInDuty())
+			System.out.println("Number of deadruns generated from vehicle subproblem = " + deadrunsGenerated.size());
+			System.out.println("Number of idle times generated from vehicle subproblem = " + idleTimesGenerated.size());
+			
+			Set<Deadrun> heuristicDeadruns = new HashSet<Deadrun>(); 
+			Set<IdleTime> heuristicIdleTimesGenerated = new HashSet<IdleTime>();
+			List<Trip> heuristicTrips = new ArrayList<Trip>();
+			
+			int beforeDeadrunSize = deadrunsGenerated.size(); 
+			int beforeIdleTimeSize = idleTimesGenerated.size(); 
+			double startDriverSub = System.currentTimeMillis(); 
+			DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, heuristicTrips, heuristicDeadruns, heuristicIdleTimesGenerated, true, false); 
+			dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
+			double endDriverSub = System.currentTimeMillis(); 
+			this.totalTimeOfDriverSub = this.totalTimeOfDriverSub + (endDriverSub - startDriverSub)/(double)1000; 
+			for(Duty duty : dutiesGenerated)
 			{
-				if(!this.idleTimes.contains(idleTime) && !idleTimesGenerated.contains(idleTime))
+				for(Deadrun deadrun : duty.getDeadrunsInDuty())
 				{
-					idleTimesGenerated.add(idleTime); 
+					if(!this.deadruns.contains(deadrun) && !deadrunsGenerated.contains(deadrun))
+					{
+						deadrunsGenerated.add(deadrun); 
+					}
+				}
+					
+				for(IdleTime idleTime : duty.getIdleTimesInDuty())
+				{
+					if(!this.idleTimes.contains(idleTime) && !idleTimesGenerated.contains(idleTime))
+					{
+						idleTimesGenerated.add(idleTime); 
+					}
 				}
 			}
+			System.out.println("Number of deadruns generated from driver subproblem = " + (deadrunsGenerated.size() - beforeDeadrunSize));
+			System.out.println("Number of idle times generated from driver subproblem = " + (idleTimesGenerated.size() - beforeIdleTimeSize));
 		}
-		System.out.println("Number of deadruns generated from driver subproblem = " + (deadrunsGenerated.size() - beforeDeadrunSize));
-		System.out.println("Number of idle times generated from driver subproblem = " + (idleTimesGenerated.size() - beforeIdleTimeSize));
+		
+		
 		
 		
 		if(!deadrunsGenerated.isEmpty())
@@ -595,7 +698,7 @@ public class Master
 			addDutyVariables(dutiesGenerated); 
 		}
 		
-		if(blocksGenerated.isEmpty() && dutiesGenerated.isEmpty())
+		if(blocksGenerated.isEmpty() && dutiesGenerated.isEmpty() && !performedLocalSearch)
 		{
 			if(this.selectedNeighborhoodGraph < this.neighborhoodGraphs.size())
 			{

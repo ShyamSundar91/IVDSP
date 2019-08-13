@@ -48,7 +48,7 @@ public class App
     public static void main( String[] args ) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = args[0]; //  "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASVestSmall/";
+    	String inputPath = /*args[0];*/    "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASVest/";
     	ReadInstance rd = new ReadInstance(inputPath); 
     	System.out.println("***********************************************");
     	

@@ -232,11 +232,12 @@ public class BBNodeDriver
 			Assert.assertTrue(value < 1e-3);		
 		}
 		
-		for(IdleTime idleTime : this.idleTimesInSolution)
+		/*for(IdleTime idleTime : this.idleTimesInSolution)
 		{
 			double value = this.cplex.getValue(this.slackIdleTimeDuty.get(idleTime)); 
+			System.out.println(idleTime.getArrivalTime() - idleTime.getDepartureTime() + ", " + idleTime.getNode().getNodeId() + ", " + idleTime.getPredecessotTrip().getTripId() + ", " + idleTime.getSuccessorTrip().getTripId());
 			Assert.assertTrue(value < 1e-3);
-		}
+		}*/
 	}
 	
 	

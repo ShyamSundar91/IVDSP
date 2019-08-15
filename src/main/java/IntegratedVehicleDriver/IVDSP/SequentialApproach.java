@@ -53,17 +53,17 @@ public class SequentialApproach
 		long start = System.currentTimeMillis(); 
 		vehicleSchedulingProblem(); 
 		long end = System.currentTimeMillis(); 
-    	System.out.println("Total time for vehicle scheduling problem= " + (double)(end-start)/1000.00);
     	long start1 = System.currentTimeMillis(); 
 		driverSchedulingProblem(); 
-		long end1 = System.currentTimeMillis(); 
+		long end1 = System.currentTimeMillis();
+		System.out.println("Total time for vehicle scheduling problem= " + (double)(end-start)/1000.00);
     	System.out.println("Total time for driver scheduling problem= " + (double)(end1-start1)/1000.00);
 		calculateObjective(); 
 	}
 	
 	private void vehicleSchedulingProblem() throws IloException
 	{
-		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphs, new HashMap<Block, Integer>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), false);
+		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphs, new HashMap<Block, Integer>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), true);
 		this.blocksInSolution = bbVehicle.getBlocksInSolution();
 		this.deadrunsInSolution = new HashSet<Deadrun>(bbVehicle.getDeadrunsInSolution()); 
 		this.idleTimesInSolution = new HashSet<IdleTime>(bbVehicle.getIdleTimesInSolution()); 
@@ -91,7 +91,7 @@ public class SequentialApproach
 			graph.removeAllEdges(arcsToRemove); 
 		}
 		
-		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.driverGraphs, new HashMap<Duty, Integer>(), false);  
+		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.driverGraphs, new HashMap<Duty, Integer>(), true);  
 		this.dutiesInSolution = dsp.getDutiesInSolution(); 
 	}
 	
@@ -114,6 +114,8 @@ public class SequentialApproach
 			{
 				System.out.println(block.getBlockId() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
 			}
+			
+			System.out.println();
 		}
 		
 		for(Duty duty : this.dutiesInSolution)
@@ -122,9 +124,10 @@ public class SequentialApproach
 			{
 				System.out.println(duty.getDutyId() + "; " + duty.getTotalDuration() + "; " + duty.getTotalCostOfDuty() + "; " + da.getDepartureNode().getNodeId() + "; " + da.getArrivalNode().getNodeId() + "; " + da.getDepartureTime() + "; " + da.getArrivalTime() + "; " + da.getActivity() + "; " + da.getTripOrDeadrunId());
 			} 
+			System.out.println();
 		}
 		
-		System.out.println("Total objective = " + this.totalObjective);
+		System.out.println("Total sequential objective = " + this.totalObjective + ", Number of blocks = " + this.blocksInSolution.size() + ", Number of duties = " + this.dutiesInSolution.size());
 	}
 
 }

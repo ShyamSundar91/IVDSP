@@ -34,9 +34,6 @@ public class RepairMethod
 {
 	private int chosenDestroyMethod; 
 	private List<Trip> allTrips; 
-	private Set<DutyTypeDepot> dutyTypeDepots; 
-	private List<DriverTravel> allDriverTravels; 
-	private Set<Node> allNodes; 
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs; 
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
 	
@@ -63,14 +60,12 @@ public class RepairMethod
 
 	private Map<Deadrun, Double> deadrunMultipliers;
 	private Map<IdleTime, Double> idleTimeMultipliers; 
+	private boolean initalSolutionLocalSearch; 
 	
-	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Set<DutyTypeDepot> dutyTypeDepots,  List<DriverTravel> allDriverTravels, Set<Node> allNodes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver) throws IloException
+	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver, boolean initalSolutionLocalSearch) throws IloException
 	{
 		this.chosenDestroyMethod = chosenDestroyMethod; 
-		this.allTrips = allTrips; 
-		this.dutyTypeDepots = dutyTypeDepots; 
-		this.allDriverTravels = allDriverTravels; 
-		this.allNodes = allNodes; 
+		this.allTrips = allTrips;  
 		this.vehicleGraphs = vehicleGraphs; 
 		this.driverGraphs = driverGraphs; 
 		this.deadrunMultipliers = deadrunMultipliers; 
@@ -89,15 +84,19 @@ public class RepairMethod
 		this.blocksInSoution = new ArrayList<Block>(); 
 		this.dutiesInSolution = new ArrayList<Duty>(); 
 		this.objective = Double.MAX_VALUE; 
+		this.initalSolutionLocalSearch = initalSolutionLocalSearch; 
 		
- 
-		if(this.chosenDestroyMethod == 0)
+		
+		if(this.initalSolutionLocalSearch)
 		{
-			repairDriverSchedulingProblem(); 
-		}
-		else if(this.chosenDestroyMethod == 1)
-		{
-			repairVehicleAndDriverSequentially();
+			if(this.chosenDestroyMethod == 0)
+			{
+				repairDriverSchedulingProblem(); 
+			}
+			else if(this.chosenDestroyMethod == 1)
+			{
+				repairVehicleAndDriverSequentially();
+			}
 		}
 		else
 		{
@@ -263,13 +262,13 @@ public class RepairMethod
 		this.vehicleGraphsCopy = graphCopy.getVehicleGraphsCopy(); 
 		this.driverGraphsCopy = graphCopy.getDriverGraphsCopy(); 
 		
-		if(this.chosenDestroyMethod > 1)
+		/*if(this.chosenDestroyMethod > 1)
 		{
 			int before = driverGraphsCopy.get(driverGraphsCopy.keySet().iterator().next()).edgeSet().size(); 
 			System.out.println("Before 1 = " + before);
 			
-			graphCopy.restrictGraphSize(vehicleGraphsCopy, driverGraphsCopy, this.dutyTypeDepots, this.allDriverTravels, this.allNodes, this.allTrips);
-		}
+			graphCopy.restrictGraphSize(vehicleGraphsCopy, driverGraphsCopy);
+		}*/
 	}
 	
 

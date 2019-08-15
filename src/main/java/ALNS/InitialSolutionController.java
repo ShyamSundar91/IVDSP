@@ -78,6 +78,8 @@ public class InitialSolutionController
 		}
 		
 		lineScheduling(); 
+		
+		localSearch(); 
 	}
 	
 	private void lineScheduling() throws IloException
@@ -103,9 +105,20 @@ public class InitialSolutionController
 			System.out.println("Line number = " + lineNumber + ", total cost = " + seqAp.getTotalObjective() + ", number of blocks = " + seqAp.getBlocksInSolution().size() + ", number of duties = " + seqAp.getDutiesInSolution().size());
 			long end = System.currentTimeMillis(); 
 			System.out.println("Total time = " + (double)(end-start)/(double)1000);
-			System.out.println("Initial Solution = " + this.initialSolutionObj);
+			System.out.println("Initial Solution = " + this.initialSolutionObj + ", Number of blocks = " + this.blocksInSolution.size() + ", Number of duties = " + this.dutiesInSolution.size());
 			
 		}
+	}
+	
+	private void localSearch() throws IloException
+	{
+		LocalSearch localSearch = new LocalSearch(allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, this.blocksInSolution, this.dutiesInSolution, this.initialSolutionObj, true, 100); 
+		this.blocksInSolution.clear();
+		this.dutiesInSolution.clear();
+		this.blocksInSolution.addAll(localSearch.getBestBlockSolution()); 
+		this.dutiesInSolution.addAll(localSearch.getBestDutySolution()); 
+		this.initialSolutionObj = localSearch.getBestObjective(); 
+		System.out.println("After local search Solution = " + this.initialSolutionObj + ", Number of blocks = " + this.blocksInSolution.size() + ", Number of duties = " + this.dutiesInSolution.size());
 	}
 	
 	

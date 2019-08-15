@@ -49,7 +49,7 @@ public class GraphCopy
 		removeDriverArcsBasedOnTrips(this.driverGraphsCopy, this.uncoveredTripsOfDriver, this.deadrunsInSolution, this.idleTimesInSolution); 
 	}
 	
-	public void restrictGraphSize(Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphsCopy, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy, Set<DutyTypeDepot> dutyTypeDepots, List<DriverTravel> allDriverTravels, Set<Node> allNodes, List<Trip> allTrips)
+	public void restrictGraphSize(Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphsCopy, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy)
 	{
 		for(VehicleTypeDepot vehicleTypeDepot : vehicleGraphsCopy.keySet())
 		{

@@ -54,9 +54,10 @@ public class DestroyMethod
 	private List<Trip> uncoveredTripsOfDriver; 
 	private Random rnd; 
 	private double degreeOfDestruction; 
+	private boolean initalSolutionLocalSearch; 
 	
 	public DestroyMethod(int iteration, int chosenDestroyMethod, List<Trip> trips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, 
-			Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> blocksInSolution, List<Duty> dutiesInSolution)
+			Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> blocksInSolution, List<Duty> dutiesInSolution, boolean initalSolutionLocalSearch)
 	{
 		this.trips = trips; 
 		this.vehicleGraphs = vehicleGraphs; 
@@ -73,22 +74,37 @@ public class DestroyMethod
 		this.uncoveredTripsOfDriver = new ArrayList<Trip>(); 
 		this.iteration = iteration; 
 		this.rnd = new Random(this.iteration); 
-		this.degreeOfDestruction = 0.2; 
+		this.degreeOfDestruction = 0.1; 
+		this.initalSolutionLocalSearch = initalSolutionLocalSearch; 
+		
+		if(this.initalSolutionLocalSearch)
+		{
+			if(chosenDestroyMethod == 0)
+			{
+				randomRemovalOfDuties();     
+			}
+			else if(chosenDestroyMethod == 1)
+			{
+				randomRemovalOfBlocks(); 
+			}
+			else 
+			{
+				throw new IllegalArgumentException(); 
+			}
+		}
+		else
+		{
+			if(chosenDestroyMethod == 0)
+			{
+				randomRemovalOfBlocks();  
+			}
+			else if(chosenDestroyMethod == 1)
+			{
+				worstRemoval(); 
+			}
+		}
 		
 		
-		if(chosenDestroyMethod == 0)
-		{
-			randomRemovalOfDuties();     
-		}
-		else if(chosenDestroyMethod == 1)
-		{
-			randomRemovalOfBlocks();  
-		}
-		else if(chosenDestroyMethod == 2)
-		{
-			//worstRemovalOfDuties(); 
-			randomRemovalOfBlocks();
-		}
 		
 		System.out.println("Number of blocks removed = " + this.blocksToBeRemoved.size());
 		System.out.println("Number of duties removed = " + this.dutiesToBeRemoved.size());
@@ -157,18 +173,12 @@ public class DestroyMethod
 		this.dutiesToBeRemoved = removeDutiesBasedOnRemovedBlocks(this.blocksToBeRemoved); 
 	}
 	
-	private void worstRemovalOfDuties()
+	private void worstRemoval()
 	{
 		this.dutiesToBeRemoved = new ArrayList<Duty>();
-		System.out.println("Number of duties in solution = " + this.dutiesInSolution.size());
-		int numberOfDutiesToDestroy = Math.max(2, (int)(this.degreeOfDestruction*this.dutiesInSolution.size())); 
-		Collections.sort(this.dutiesInSolution);
-		List<Duty> candidates = this.dutiesInSolution.subList(0, 2*numberOfDutiesToDestroy); 
-		Collections.shuffle(candidates, this.rnd);
-		this.dutiesToBeRemoved.addAll(candidates.subList(0, numberOfDutiesToDestroy)); 	
 		
 		this.blocksToBeRemoved = new ArrayList<Block>(); 
-		/*this.blocksToBeRemoved = new ArrayList<Block>(); 
+	
 		
 		SequenceGeneration seqGen = new SequenceGeneration(this.trips, this.blocksInSolution, this.dutiesInSolution); 
 		List<Sequence> allSequences = seqGen.getSequences(); 
@@ -176,13 +186,26 @@ public class DestroyMethod
 		Collections.reverse(allSequences);
 		
 		int numberOfBlocksToDestroy = Math.max(2, (int)(this.degreeOfDestruction*this.blocksInSolution.size()));
-		List<Sequence> candidates = allSequences.subList(0, 2*numberOfBlocksToDestroy); 
-		Collections.shuffle(candidates);
-		for(Sequence seq : candidates)
+		List<Sequence> candidates = allSequences.subList(0, numberOfBlocksToDestroy); 
+		Collections.shuffle(candidates, this.rnd);
+		Sequence selectedSequence = candidates.get(0); 
+		allSequences.remove(selectedSequence); 
+		
+		this.blocksToBeRemoved.add(selectedSequence.getBlockCoveringSequence()); 
+		int latestEndtTime = selectedSequence.getDutyCoveringSequence().getEndTime() + selectedSequence.getDutyCoveringSequence().getDutyType().getMaxDuration(); 
+		int earliestStartTime = Math.max(0, selectedSequence.getDutyCoveringSequence().getStartTime() - selectedSequence.getDutyCoveringSequence().getDutyType().getMaxDuration()); 
+		
+		for(Sequence seq : allSequences)
 		{
 			if(!this.blocksToBeRemoved.contains(seq.getBlockCoveringSequence()))
 			{
-				this.blocksToBeRemoved.add(seq.getBlockCoveringSequence()); 
+				 if(!seq.getDutyCoveringSequence().equals(selectedSequence.getDutyCoveringSequence()))
+				 {
+					 if(seq.getDutyCoveringSequence().getStartTime() >= earliestStartTime && seq.getDutyCoveringSequence().getEndTime() <= latestEndtTime)
+					 {
+						 this.blocksToBeRemoved.add(seq.getBlockCoveringSequence()); 
+					 }
+				 }
 			}
 			
 			if(this.blocksToBeRemoved.size() >= numberOfBlocksToDestroy)
@@ -191,7 +214,7 @@ public class DestroyMethod
 			}
 		}
 		
-		this.dutiesToBeRemoved = removeDutiesBasedOnRemovedBlocks(this.blocksToBeRemoved); */
+		this.dutiesToBeRemoved = removeDutiesBasedOnRemovedBlocks(this.blocksToBeRemoved); 
 	}
 	
 	private List<Duty> removeDutiesBasedOnRemovedBlocks(List<Block> blocksToBeRemoved)

@@ -229,12 +229,13 @@ public class IntegratedMasterProblem
 				
 				long end = System.currentTimeMillis(); 
 				double totalTime = (end- start)/1000.00; 
-				if(totalTime > 86400)
+				if(totalTime > 30 && this.earlyTermination)
 				{
+					System.out.println("Time limit reached");
 					status = 1; 
 				}
 				
-				if(this.earlyTermination && this.useDeadrunsAndIdleTimesInMaster)
+				/*if(this.earlyTermination && this.useDeadrunsAndIdleTimesInMaster)
 				{
 
 					double change = ((this.previousLpObjective - this.lpObjective)/this.previousLpObjective) * 100.00;
@@ -253,7 +254,7 @@ public class IntegratedMasterProblem
 					}
 					
 					this.previousLpObjective = this.lpObjective; 
-				}
+				}*/
 				
 			
 				

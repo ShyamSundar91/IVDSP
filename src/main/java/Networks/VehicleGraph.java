@@ -97,17 +97,17 @@ public class VehicleGraph
 				{
 					int endTime = tripVertex.getTrip().getDepartureTime(); 
 				    int startTime = endTime - travel.get().getDuration(); 
-				    Deadrun deadrun = new Deadrun(this.vehicleDepot, tripVertex.getTrip().getDepartureNode(), startTime, endTime, true, false); 
-				    if(!this.deadruns.contains(deadrun))
+				    Deadrun deadrun = new Deadrun(this.vehicleDepot, tripVertex.getTrip().getDepartureNode(), startTime, endTime, true, false, -1, tripVertex.getTrip().getTripId()); 
+				    //if(!this.deadruns.contains(deadrun))
 				    {
 				    	this.deadruns.add(deadrun); 
 				    	deadrunsOnArc.add(deadrun); 
 				    }
-				    else
+				    /*else
 				    {
 				    	Optional<Deadrun> existingDeadrun = this.deadruns.stream().filter(d -> d.equals(deadrun)).findAny(); 
 				    	deadrunsOnArc.add(existingDeadrun.get()); 
-				    }
+				    }*/
 				    
 					BlockActivity travelFromDepot = new BlockActivity(this.vehicleDepot, tripVertex.getTrip().getDepartureNode(), startTime, endTime, travel.get().getDistance(), deadrunsOnArc.get(0).getDeadrunId(), "Garage"); 
 					blockElements.add(travelFromDepot); 
@@ -133,17 +133,17 @@ public class VehicleGraph
 					int startTime = tripVertex.getTrip().getArrivalTime();
 					int endTime = startTime + travel.get().getDuration(); 
 					
-					Deadrun deadrun = new Deadrun(tripVertex.getTrip().getArrivalNode(), this.vehicleDepot, startTime, endTime, false, true); 
-					if(!this.deadruns.contains(deadrun))
+					Deadrun deadrun = new Deadrun(tripVertex.getTrip().getArrivalNode(), this.vehicleDepot, startTime, endTime, false, true, tripVertex.getTrip().getTripId(), Integer.MAX_VALUE); 
+					//if(!this.deadruns.contains(deadrun))
 					{
 					    this.deadruns.add(deadrun); 
 					    deadrunsOnArc.add(deadrun); 
 					}
-					else
+					/*else
 					{
 						Optional<Deadrun> existingDeadrun = this.deadruns.stream().filter(d -> d.equals(deadrun)).findAny(); 
 					    deadrunsOnArc.add(existingDeadrun.get()); 
-					}
+					}*/
 					
 					BlockActivity travelToDepot = new BlockActivity(tripVertex.getTrip().getArrivalNode(), this.vehicleDepot, startTime, endTime, travel.get().getDistance(), deadrunsOnArc.get(0).getDeadrunId(), "Garage"); 
 					blockElements.add(travelToDepot); 
@@ -170,7 +170,7 @@ public class VehicleGraph
 			{
 				if(!trip1.getTrip().equals(trip2.getTrip()) )
 				{
-					if((trip2.getTrip().getDepartureTime() - trip1.getTrip().getArrivalTime()) >= 0 /*&& (trip2.getTrip().getDepartureTime() - trip1.getTrip().getArrivalTime()) <= 240*/) //Max time between two trips
+					if((trip2.getTrip().getDepartureTime() - trip1.getTrip().getArrivalTime()) >= 0 && (trip2.getTrip().getDepartureTime() - trip1.getTrip().getArrivalTime()) <= 240) //Max time between two trips
 					{
 						
 						if(trip1.getTrip().getArrivalNode().equals(trip2.getTrip().getDepartureNode()))
@@ -202,6 +202,31 @@ public class VehicleGraph
 
 	private void check()
 	{
+		Set<VehicleArc> arcs = this.vehicleGraph.edgeSet(); 
+		for(VehicleArc arc : arcs)
+		{
+			if(!arc.getBlockActivitiesOnEdge().isEmpty() && !arc.getDeadrunsOnEdge().isEmpty())
+			{
+				List<Deadrun> deadrunsInEdge = arc.getDeadrunsOnEdge(); 
+				boolean foundDeadrun = false; 
+				for(Deadrun deadrun : deadrunsInEdge)
+				{
+					for(BlockActivity activity : arc.getBlockActivitiesOnEdge())
+					{
+						if(deadrun.getDepartureNode().equals(activity.getDepartureNode()) && deadrun.getArrivalNode().equals(activity.getArrivalNode()) && deadrun.getDepartureTime() == activity.getDepartureTime() && deadrun.getArrivalTime() == activity.getArrivalTime())
+						{
+							foundDeadrun = true;
+							break; 
+						}
+					}
+					
+					if(!foundDeadrun)
+					{
+						throw new IllegalArgumentException();
+					}
+				}
+			}
+		}
 		
 		Set<VehicleVertex> vertices = this.vehicleGraph.vertexSet().stream().filter(v -> v.getTrip()!= null).collect(Collectors.toSet());
 		for(VehicleVertex vertex : vertices)

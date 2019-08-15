@@ -103,7 +103,7 @@ public class BBNodeVehicle
 				if(this.earlyTermination || !this.allowLineChange)
 				{
 					double change = ((previousObj- lpObjective)/previousObj) * 100.00; 
-					if(change < 0.001)
+					if(change < 0.01)
 					{
 						noImprovement++; 
 					}
@@ -250,7 +250,12 @@ public class BBNodeVehicle
 		Map<Trip, IloRange> tripConstraints = new HashMap<Trip, IloRange>(); 
 		for(Trip trip : this.trips)
 		{
-			tripConstraints.put(trip, this.cplex.addRange(1, 1, "ctTripVehicle_" + trip.getTripId())); 
+			double rhs = 1; 
+			if(this.initialBlocksAndGenerated.isEmpty() && this.trips.size() > 400)
+			{
+				rhs = Double.MAX_VALUE; 
+			}
+			tripConstraints.put(trip, this.cplex.addRange(1, rhs, "ctTripVehicle_" + trip.getTripId())); 
 			
 			IloColumn slack = this.cplex.column(this.cplex.getObjective(), 10000); 
 			slack = slack.and(this.cplex.column(tripConstraints.get(trip), 1)); 

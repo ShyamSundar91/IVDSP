@@ -55,17 +55,17 @@ public class BetweenTripsOnDifferentNodes
 		if(travelToTrip2.isPresent())
 		{
 			int endTimeOfTravelToTrip2Node = this.trip1.getArrivalTime() + travelToTrip2.get().getDuration(); 
-			Deadrun deadrun1 = new Deadrun(this.trip1.getArrivalNode(), this.trip2.getDepartureNode(), this.trip1.getArrivalTime(), endTimeOfTravelToTrip2Node, false, false); 
-			if(!this.deadruns.contains(deadrun1))
+			Deadrun deadrun1 = new Deadrun(this.trip1.getArrivalNode(), this.trip2.getDepartureNode(), this.trip1.getArrivalTime(), endTimeOfTravelToTrip2Node, false, false, trip1.getTripId(), trip2.getTripId()); 
+			//if(!this.deadruns.contains(deadrun1))
 			{
 				//this.deadruns.add(deadrun1); 
 				this.deadrunsOnArc.add(deadrun1); 
 			}
-			else
+			/*else
 			{
 				Optional<Deadrun> existingDeadrun = this.deadruns.stream().filter(d -> d.equals(deadrun1)).findAny(); 
 				this.deadrunsOnArc.add(existingDeadrun.get()); 
-			}
+			}*/
 			
 			BlockActivity activityTravelToTrip2 = new BlockActivity(this.trip1.getArrivalNode(), this.trip2.getDepartureNode(), this.trip1.getArrivalTime(), endTimeOfTravelToTrip2Node, travelToTrip2.get().getDistance(), this.deadrunsOnArc.get(0).getDeadrunId(), "Deadrun"); 
 			this.blockActivitiesOnArc.add(activityTravelToTrip2); 
@@ -78,18 +78,18 @@ public class BetweenTripsOnDifferentNodes
 				BlockActivity blockActivity = new BlockActivity(trip2.getDepartureNode(), trip2.getDepartureNode(), endTimeOfTravelToTrip2Node, trip2.getDepartureTime(), 0, -1 , "Idle"); 
 				this.blockActivitiesOnArc.add(blockActivity); 	 
 				IdleTime idle = new IdleTime(trip2.getDepartureNode(), endTimeOfTravelToTrip2Node, trip2.getDepartureTime(), trip1, trip2); 
-				if(!this.idleTimes.contains(idle))
+				//if(!this.idleTimes.contains(idle))
 				{
 					this.idleTimes.add(idle); 
 					this.idleTimeOnArc = idle; 
 				}
-				else
+				/*else
 				{
 					Optional<IdleTime> existingIdleTime = this.idleTimes.stream().filter(i -> i.equals(idle)).findFirst(); 
 					this.idleTimeOnArc = existingIdleTime.get(); 
-				}
+				}*/
 				
-				if(!this.deadruns.contains(deadrun1))
+				//if(!this.deadruns.contains(deadrun1))
 				{
 					this.deadruns.add(deadrun1); 
 				}
@@ -151,34 +151,34 @@ public class BetweenTripsOnDifferentNodes
 				if(travelToParkingRefueling.isPresent() && travelFromParkingRefueling.isPresent())
 				{
 					int endTimeOfTravelToParkRefuel = trip1.getArrivalTime() + (travelToParkingRefueling.get().getDuration()); 
-					Deadrun deadrun1 = new Deadrun(trip1.getArrivalNode(), bestNode, trip1.getArrivalTime(), endTimeOfTravelToParkRefuel, false, true); 
-					if(!this.deadruns.contains(deadrun1))
+					Deadrun deadrun1 = new Deadrun(trip1.getArrivalNode(), bestNode, trip1.getArrivalTime(), endTimeOfTravelToParkRefuel, false, true, trip1.getTripId(), Integer.MAX_VALUE); 
+					//if(!this.deadruns.contains(deadrun1))
 					{
 						//this.deadruns.add(deadrun1); 
 						this.deadrunsOnArc.add(deadrun1); 
 					}
-					else
+					/*else
 					{
 						Optional<Deadrun> existingDeadrun = this.deadruns.stream().filter(d -> d.equals(deadrun1)).findAny(); 
 						this.deadrunsOnArc.add(existingDeadrun.get()); 
-					}
+					}*/
 					
 					BlockActivity travelToParkRefuel = new BlockActivity(trip1.getArrivalNode(), bestNode, trip1.getArrivalTime(), endTimeOfTravelToParkRefuel, travelToParkingRefueling.get().getDistance(), this.deadrunsOnArc.get(0).getDeadrunId(), "Deadrun");
 					this.blockActivitiesOnArc.add(travelToParkRefuel); 
 						 
 					
 					int startTimeOfTravelFromParkRefuel = trip2.getDepartureTime() - (travelFromParkingRefueling.get().getDuration()); 
-					Deadrun deadrun2 = new Deadrun(bestNode, trip2.getDepartureNode(), startTimeOfTravelFromParkRefuel, trip2.getDepartureTime(), true, false); 
-					if(!this.deadruns.contains(deadrun2))
+					Deadrun deadrun2 = new Deadrun(bestNode, trip2.getDepartureNode(), startTimeOfTravelFromParkRefuel, trip2.getDepartureTime(), true, false, -1, trip2.getTripId()); 
+					//if(!this.deadruns.contains(deadrun2))
 					{
 						//this.deadruns.add(deadrun2); 
 						this.deadrunsOnArc.add(deadrun2); 
 					}
-					else
+					/*else
 					{
 						Optional<Deadrun> existingDeadrun = this.deadruns.stream().filter(d -> d.equals(deadrun2)).findAny(); 
 						this.deadrunsOnArc.add(existingDeadrun.get()); 
-					}
+					}*/
 					
 					BlockActivity travelFromParkRefuel = new BlockActivity(bestNode, trip2.getDepartureNode(), startTimeOfTravelFromParkRefuel, trip2.getDepartureTime(), travelFromParkingRefueling.get().getDistance(), this.deadrunsOnArc.get(1).getDeadrunId(), "Deadrun"); 
 					this.blockActivitiesOnArc.add(travelFromParkRefuel);  
@@ -196,12 +196,12 @@ public class BetweenTripsOnDifferentNodes
 							BlockActivity rechargeAtNode = new BlockActivity(bestNode, bestNode, endTimeOfTravelToParkRefuel, startTimeOfTravelFromParkRefuel, 0, -1, "Recharging"); 
 							this.blockActivitiesOnArc.add(rechargeAtNode);  
 							
-							if(!this.deadruns.contains(deadrun1))
+							//if(!this.deadruns.contains(deadrun1))
 							{
 								this.deadruns.add(deadrun1); 
 							}
 							
-							if(!this.deadruns.contains(deadrun2))
+							//if(!this.deadruns.contains(deadrun2))
 							{
 								this.deadruns.add(deadrun2); 
 							}
@@ -217,12 +217,12 @@ public class BetweenTripsOnDifferentNodes
 						BlockActivity parkAtNode = new BlockActivity(bestNode, bestNode, endTimeOfTravelToParkRefuel, startTimeOfTravelFromParkRefuel, 0, -1, "Parking"); 
 						this.blockActivitiesOnArc.add(parkAtNode);
 						
-						if(!this.deadruns.contains(deadrun1))
+						//if(!this.deadruns.contains(deadrun1))
 						{
 							this.deadruns.add(deadrun1); 
 						}
 						
-						if(!this.deadruns.contains(deadrun2))
+						//if(!this.deadruns.contains(deadrun2))
 						{
 							this.deadruns.add(deadrun2); 
 						}

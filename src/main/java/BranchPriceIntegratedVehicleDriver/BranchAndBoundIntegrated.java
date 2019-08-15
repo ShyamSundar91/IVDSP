@@ -134,6 +134,16 @@ public class BranchAndBoundIntegrated
 				}
 				else
 				{
+					for(Block block1 : blocksInSolution)
+					{
+						for(BlockActivity activity : block1.getBlockActivities())
+						{
+							System.out.println(activity.getDepartureNode().getNodeId() + "; " + activity.getArrivalNode().getNodeId() + "; " + activity.getDepartureTime() + "; " + activity.getArrivalTime() + "; " + activity.getActivity());
+						}
+						System.out.println();
+					}
+					
+					System.out.println(deadrun.getDepartureNode().getNodeId() + "; " + deadrun.getArrivalNode().getNodeId() + "; " + deadrun.getDepartureTime() + "; " + deadrun.getArrivalTime());
 					throw new IllegalArgumentException();
 				}
 			}

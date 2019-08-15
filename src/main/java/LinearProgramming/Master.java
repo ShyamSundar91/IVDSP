@@ -273,7 +273,7 @@ public class Master
 				
 				if(this.initialSolChanged)
 				{
-					double change = ((this.previousLpObjective - this.lpObjective)/this.previousLpObjective) * 100.00;
+					/*double change = ((this.previousLpObjective - this.lpObjective)/this.previousLpObjective) * 100.00;
 					if(change < 0.01)
 					{
 						this.noImprovement++;   
@@ -289,7 +289,7 @@ public class Master
 						{
 							selectNeighborhoodGraph(); 
 						}
-					}
+					}*/
 						
 					this.previousLpObjective = this.lpObjective; 
 				}
@@ -540,7 +540,7 @@ public class Master
 		Set<Deadrun> deadrunsGenerated = new HashSet<Deadrun>(); 
 		Set<IdleTime> idleTimesGenerated = new HashSet<IdleTime>(); 
 		
-		if(iterationNumber != 0 && iterationNumber%50 == 0)
+		/*if(iterationNumber != 0 && iterationNumber%50 == 0)
 		{
 			this.performedLocalSearch = true;
 			double startLocal = System.currentTimeMillis(); 
@@ -603,7 +603,7 @@ public class Master
 				}
 			}
 		}
-		else
+		else*/
 		{
 			double startVehicleSub = System.currentTimeMillis(); 
 			VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.trips, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, true, false); 

@@ -8,7 +8,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.junit.Assert;
 
+import Data.DriverTravel;
+import Data.Node;
 import Data.Trip;
 import Variables.Deadrun;
 import Variables.IdleTime;
@@ -44,6 +47,89 @@ public class GraphCopy
 		
 		removeVehicleArcsBasedOnTrips(this.vehicleGraphsCopy, this.uncoveredTripsOfVehicle);
 		removeDriverArcsBasedOnTrips(this.driverGraphsCopy, this.uncoveredTripsOfDriver, this.deadrunsInSolution, this.idleTimesInSolution); 
+	}
+	
+	public void restrictGraphSize(Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphsCopy, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy, Set<DutyTypeDepot> dutyTypeDepots, List<DriverTravel> allDriverTravels, Set<Node> allNodes, List<Trip> allTrips)
+	{
+		for(VehicleTypeDepot vehicleTypeDepot : vehicleGraphsCopy.keySet())
+		{
+			DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph = vehicleGraphsCopy.get(vehicleTypeDepot); 
+			Set<VehicleArc> betweenTripArcs = vehicleGraph.edgeSet().stream().filter(a -> a.getPredecessorVertex().getTrip() != null && a.getSuccessorVertex().getTrip() != null).collect(Collectors.toSet()); 
+			Set<VehicleArc> arcsToRemove = new HashSet<VehicleArc>(); 
+			
+			for(VehicleArc arc : betweenTripArcs)
+			{
+				if(arc.getIdleTimeOnArc() != null)
+				{
+					/*if(arc.getPredecessorVertex().getTrip().getArrivalNode().equals(arc.getSuccessorVertex().getTrip().getDepartureNode()))
+					{
+						if(arc.getIdleTimeOnArc().getArrivalTime() - arc.getIdleTimeOnArc().getDepartureTime() > 36)
+						{
+							arcsToRemove.add(arc); 
+						}
+					}
+					else*/ if(arc.getIdleTimeOnArc().getArrivalTime() - arc.getIdleTimeOnArc().getDepartureTime() > 36)
+					{
+						arcsToRemove.add(arc);
+					}
+				}
+			}
+			
+			vehicleGraph.removeAllEdges(arcsToRemove); 
+		}
+		
+		for(DutyTypeDepot dutyTypeDepot : driverGraphsCopy.keySet())
+		{
+			DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph = driverGraphsCopy.get(dutyTypeDepot); 
+			//Set<DriverArc> tripArcs = driverGraph.edgeSet().stream().filter(a -> a.getTrip() != null).collect(Collectors.toSet()); 
+			Set<DriverArc> arcsToRemove = new HashSet<DriverArc>(); 
+			for(DriverArc arc : driverGraph.edgeSet())
+			{
+				if(arc.getIdleTimeOnArc() != null)
+				{
+					if(arc.getIdleTimeOnArc().getArrivalTime() - arc.getIdleTimeOnArc().getDepartureTime() > 36)
+					{
+						arcsToRemove.add(arc); 
+					}
+				}
+				
+			}
+			driverGraph.removeAllEdges(arcsToRemove); 
+		}
+		
+		/*Set<Deadrun> deadrunsInRestrictedGraph = new HashSet<Deadrun>(); 
+		Set<IdleTime> idleTimesInRestrictedGraph = new HashSet<IdleTime>(); 
+		
+		for(VehicleTypeDepot vehicleTypeDepot : vehicleGraphsCopy.keySet())
+		{
+			DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph = vehicleGraphsCopy.get(vehicleTypeDepot); 
+			
+			for(VehicleArc arc : vehicleGraph.edgeSet())
+			{
+				if(!arc.getDeadrunsOnEdge().isEmpty())
+				{
+					deadrunsInRestrictedGraph.addAll(arc.getDeadrunsOnEdge()); 
+				}
+				
+				if(arc.getIdleTimeOnArc() != null)
+				{
+					idleTimesInRestrictedGraph.add(arc.getIdleTimeOnArc()); 
+				}
+			}
+		}*/
+		
+		
+		int before = driverGraphsCopy.get(driverGraphsCopy.keySet().iterator().next()).edgeSet().size(); 
+		System.out.println("Before = " + before);
+		
+		/*DriverGraphGeneration driverGraphgen = new DriverGraphGeneration(dutyTypeDepots, allDriverTravels, allNodes, allTrips, deadrunsInRestrictedGraph, vehicleGraphsCopy); 
+		driverGraphsCopy = driverGraphgen.getDriverGraphs(); 
+		
+		removeDriverArcsBasedOnTrips(driverGraphsCopy, this.uncoveredTripsOfDriver, this.deadrunsInSolution, this.idleTimesInSolution);
+		
+		int after = driverGraphsCopy.get(driverGraphsCopy.keySet().iterator().next()).edgeSet().size(); 
+		System.out.println("After = " + after);
+		Assert.assertTrue(after < before);*/
 	}
 	
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> createCopyOfVehicleGraph()

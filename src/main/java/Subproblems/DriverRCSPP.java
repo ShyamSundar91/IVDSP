@@ -420,7 +420,7 @@ public class DriverRCSPP
 	{
 		List<LabelDriver> labelsAtSink = new ArrayList<LabelDriver>(this.sinkVertex.getLabels()); 
 		
-		if(labelsAtSink.size() > 250 && !this.generateAllVariables)
+		if(labelsAtSink.size() > 500 && !this.generateAllVariables)
 		{
 			/*if(labelsAtSink.size() > 1000 /*&& this.useSubNetwork)
 			{
@@ -431,7 +431,7 @@ public class DriverRCSPP
 			else*/
 			{
 				Collections.sort(labelsAtSink);
-				labelsAtSink = labelsAtSink.subList(0, 250);
+				labelsAtSink = labelsAtSink.subList(0, 500);
 			}
 		}
 		
@@ -569,10 +569,10 @@ public class DriverRCSPP
 			{
 				Set<Trip> tripsInLabel = new HashSet<Trip>(); 
 				tripsInLabel.addAll(label.getUpdatedResources().getUpdatedTrips()); 
-				//if(!tripsInLabel.isEmpty())
+				if(!tripsInLabel.isEmpty())
 				{
 					tripsInLabel.retainAll(tripsCovered); 
-					if(tripsInLabel.size() <= 1)
+					if(tripsInLabel.size() <= 0)
 					{
 						selectedLabels.add(label); 
 						tripsCovered.addAll(label.getUpdatedResources().getUpdatedTrips()); 

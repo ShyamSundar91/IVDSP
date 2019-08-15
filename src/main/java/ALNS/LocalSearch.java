@@ -9,6 +9,8 @@ import java.util.Set;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
 
+import Data.DriverTravel;
+import Data.Node;
 import Data.Trip;
 import Networks.DriverArc;
 import Networks.DriverVertex;
@@ -28,6 +30,9 @@ import lombok.Getter;
 public class LocalSearch 
 {
 	private List<Trip> allTrips; 
+	private Set<DutyTypeDepot> dutyTypeDepots; 
+	private List<DriverTravel> allDriverTravels; 
+	private Set<Node> allNodes; 
 	private Map<Deadrun, Double> deadrunMultipliers; 
 	private Map<IdleTime, Double> idleTimeMultipliers;
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs; 
@@ -54,9 +59,12 @@ public class LocalSearch
 	private Map<Integer, List<Double>> weightAtEachIteration; 
 	private Map<Integer, List<Integer>> scoreAtEachIteration; 
 	private Map<Integer, List<Double>> objectiveAtEachIteration; 
-	public LocalSearch(List<Trip> allTrips, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective) throws IloException
+	public LocalSearch(List<Trip> allTrips, Set<DutyTypeDepot> dutyTypeDepots, List<DriverTravel> allDriverTravels, Set<Node> allNodes, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective) throws IloException
 	{
 		this.allTrips = allTrips; 
+		this.dutyTypeDepots = dutyTypeDepots; 
+		this.allDriverTravels = allDriverTravels; 
+		this.allNodes = allNodes; 
 		this.deadrunMultipliers = deadrunMultipliers; 
 		this.idleTimeMultipliers = idleTimeMultipliers; 
 		this.vehicleGraphs = vehicleGraphs; 
@@ -102,10 +110,10 @@ public class LocalSearch
 		this.score2 = 0; 
 		this.lambda = 0.1; 
 		
-		this.maxIterations = 100; 
+		this.maxIterations = 1000; 
 		this.segmentSize = 25; 
 		
-		int numberOfDestroyMethods = 2; 
+		int numberOfDestroyMethods = 3; 
 		double initialProbabilities = 1.0/(double)(numberOfDestroyMethods); 
 		this.destroyWeights = new double[numberOfDestroyMethods]; 
 		this.destroyProbabilities = new double[numberOfDestroyMethods]; 
@@ -138,7 +146,7 @@ public class LocalSearch
 			List<Trip> uncoveredTripsOfVehicle = destroy.getUncoveredTripsOfVehicle();
 			List<Trip> uncoveredTripsOfDriver = destroy.getUncoveredTripsOfDriver(); 
 			
-			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver); 
+			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.dutyTypeDepots, this.allDriverTravels, this.allNodes, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver); 
 			
 			if(this.bestObjective - repair.getObjective() > 1e-3)
 			{

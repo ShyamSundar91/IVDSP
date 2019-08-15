@@ -48,7 +48,7 @@ public class App
     public static void main( String[] args ) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = /*args[0];*/    "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASVest/";
+    	String inputPath = /*args[0];*/    "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASSydNord/";
     	ReadInstance rd = new ReadInstance(inputPath); 
     	System.out.println("***********************************************");
     	
@@ -117,14 +117,14 @@ public class App
     	Map<Duty, Integer> dutiesGenerated = new HashMap<Duty, Integer>(); // driverGraphgen.getDutiesGenerated(); 
     	System.out.println("***********************************************");
     	
-    	NeighborhoodGraphGeneration neigh = new NeighborhoodGraphGeneration(allDutyTypeDepots, allDriverTravels, allNodes, allTrips, vehicleGraphs, driverGraphs); 
+    	//NeighborhoodGraphGeneration neigh = new NeighborhoodGraphGeneration(allDutyTypeDepots, allDriverTravels, allNodes, allTrips, vehicleGraphs, driverGraphs); 
     	
     	//InitialSolutionController initial = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
     	//SequenceGeneration seq = new SequenceGeneration(allTrips, initial.getBlocksInSolution(), initial.getDutiesInSolution()); 
     	long start = System.currentTimeMillis(); 
-    	Master master = new Master(allTrips, allVehicleTravels, neigh.getNeighborhoodGraphs()); 
+    	//Master master = new Master(allTrips, allVehicleTravels, neigh.getNeighborhoodGraphs()); 
     	//ColumnGeneration cg = new ColumnGeneration(allTrips, allDeadruns, allIdleTimes, vehicleGraphs, driverGraphs, /*initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj()*/ new ArrayList<Block>(), new ArrayList<Duty>(), Double.MAX_VALUE); 
-    	//LocalSearch localSearch = new LocalSearch(allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj()); 
+    	//LocalSearch localSearch = new LocalSearch(allTrips, allDutyTypeDepots, allDriverTravels, allNodes, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj()); 
     	//blocksGenerated.addAll(initial.getBlocksInSolution()); 
     	//dutiesGenerated.addAll(initial.getDutiesInSolution()); 
     	Set<Deadrun> deadrunsInSolution = new HashSet<Deadrun>(); 
@@ -138,7 +138,7 @@ public class App
     	//BranchAndBoundIntegrated bb = new BranchAndBoundIntegrated(allTrips, blocksGenerated, dutiesGenerated, deadrunsInSolution, idleTimesInSolution, vehicleGraphs, driverGraphs, true); 
     	
     	
-    	//SequentialApproach seq = new SequentialApproach(allTrips, vehicleGraphs, driverGraphs); 
+    	SequentialApproach seq = new SequentialApproach(allTrips, vehicleGraphs, driverGraphs); 
     	long end = System.currentTimeMillis(); 
     	System.out.println("Total time = " + (double)(end-start)/1000.00);
     

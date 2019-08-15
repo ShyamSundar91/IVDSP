@@ -21,8 +21,8 @@ public class Sequence implements Comparable<Sequence>
 		this.tripsInSequence = tripsInSequence; 
 		this.blockCoveringSequence = blockCoveringSequence; 
 		this.dutyCoveringSequence = dutyCoveringSequence; 
-		double totalDistanceOfTrips = this.tripsInSequence.stream().mapToDouble(t -> t.getDistance()).sum(); 
-		this.costOfSequence = (this.blockCoveringSequence.getTotalCostOfBlock() + this.dutyCoveringSequence.getTotalCostOfDuty())/totalDistanceOfTrips; 
+		double totalDurationOfTrips = this.tripsInSequence.stream().mapToDouble(t -> (t.getArrivalTime()-t.getDepartureTime())).sum(); 
+		this.costOfSequence = (this.blockCoveringSequence.getTotalCostOfBlock() + this.dutyCoveringSequence.getTotalCostOfDuty())/totalDurationOfTrips; 
 		
 		this.earliestStartTime = this.tripsInSequence.stream().mapToInt(t -> t.getDepartureTime()).min().getAsInt();
 		this.latestEndTime = this.tripsInSequence.stream().mapToInt(t -> t.getArrivalTime()).max().getAsInt(); 

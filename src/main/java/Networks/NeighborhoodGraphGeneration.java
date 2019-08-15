@@ -42,7 +42,7 @@ public class NeighborhoodGraphGeneration
 		this.neighborhoodGraphs = new ArrayList<NeighborhoodGraph>(); 
 		//restrictLineChangesAndIdleTime(); 
 		restrictLineChanges(); 
-		restrictDeadrunsAndIdleTimes(); 
+		//restrictDeadrunsAndIdleTimes(); 
 		restrictDeadruns(); 
 		entireGraph(); 
 	}

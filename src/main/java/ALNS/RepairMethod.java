@@ -6,12 +6,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
 
 import BranchPriceDriver.BranchAndBoundDriver;
 import BranchPriceIntegratedVehicleDriver.BranchAndBoundIntegrated;
 import BranchPriceVehicle.BranchAndBoundVehicle;
+import Data.DriverTravel;
+import Data.Node;
 import Data.Trip;
 import Networks.DriverArc;
 import Networks.DriverVertex;
@@ -31,6 +34,9 @@ public class RepairMethod
 {
 	private int chosenDestroyMethod; 
 	private List<Trip> allTrips; 
+	private Set<DutyTypeDepot> dutyTypeDepots; 
+	private List<DriverTravel> allDriverTravels; 
+	private Set<Node> allNodes; 
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs; 
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
 	
@@ -58,10 +64,13 @@ public class RepairMethod
 	private Map<Deadrun, Double> deadrunMultipliers;
 	private Map<IdleTime, Double> idleTimeMultipliers; 
 	
-	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver) throws IloException
+	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Set<DutyTypeDepot> dutyTypeDepots,  List<DriverTravel> allDriverTravels, Set<Node> allNodes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver) throws IloException
 	{
 		this.chosenDestroyMethod = chosenDestroyMethod; 
 		this.allTrips = allTrips; 
+		this.dutyTypeDepots = dutyTypeDepots; 
+		this.allDriverTravels = allDriverTravels; 
+		this.allNodes = allNodes; 
 		this.vehicleGraphs = vehicleGraphs; 
 		this.driverGraphs = driverGraphs; 
 		this.deadrunMultipliers = deadrunMultipliers; 
@@ -88,8 +97,7 @@ public class RepairMethod
 		}
 		else if(this.chosenDestroyMethod == 1)
 		{
-			repairVehicleAndDriverSequentially(); 
-			 
+			repairVehicleAndDriverSequentially();
 		}
 		else
 		{
@@ -191,6 +199,24 @@ public class RepairMethod
 		
 		createGraphsCopy();
 		
+		for(VehicleTypeDepot vehicleTypeDepot : vehicleGraphsCopy.keySet())
+		{
+			DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph = vehicleGraphsCopy.get(vehicleTypeDepot); 
+			
+			for(VehicleArc arc : vehicleGraph.edgeSet())
+			{
+				if(!arc.getDeadrunsOnEdge().isEmpty())
+				{
+					this.deadrunInSolution.addAll(arc.getDeadrunsOnEdge()); 
+				}
+				
+				if(arc.getIdleTimeOnArc() != null)
+				{
+					this.idleTimeInSolution.add(arc.getIdleTimeOnArc()); 
+				}
+			}
+		}
+		
 		Map<Block, Integer> initialBlocks = new HashMap<Block, Integer>(); 
 		for(Block block : this.intermediateBlockSolution)
 		{
@@ -236,6 +262,14 @@ public class RepairMethod
 		GraphCopy graphCopy = new GraphCopy(this.vehicleGraphs, this.driverGraphs, this.uncoveredTripsOfVehicle, this.uncoveredTripsOfDriver, this.deadrunInSolution, this.idleTimeInSolution);
 		this.vehicleGraphsCopy = graphCopy.getVehicleGraphsCopy(); 
 		this.driverGraphsCopy = graphCopy.getDriverGraphsCopy(); 
+		
+		if(this.chosenDestroyMethod > 1)
+		{
+			int before = driverGraphsCopy.get(driverGraphsCopy.keySet().iterator().next()).edgeSet().size(); 
+			System.out.println("Before 1 = " + before);
+			
+			graphCopy.restrictGraphSize(vehicleGraphsCopy, driverGraphsCopy, this.dutyTypeDepots, this.allDriverTravels, this.allNodes, this.allTrips);
+		}
 	}
 	
 

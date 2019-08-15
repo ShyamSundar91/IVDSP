@@ -1,6 +1,9 @@
 package BranchPriceIntegratedVehicleDriver;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -152,6 +155,56 @@ public class BranchingDecisionIntegrated
 			}
 		}
 			
+	}
+	
+	private void interTripsFixingForBlock(Map<Block, Double> fractionalValuesOfBlockVariables)
+	{
+		double [][] fractionalTrips = new double[this.trips.size()][this.trips.size()];
+		for(double [] row : fractionalTrips)
+		{
+			Arrays.fill(row, 0);
+		}
+		Map<Trip, Integer> mapTripIds =  new HashMap<Trip, Integer>(); 
+		int id  = 0; 
+		for(Trip trip : this.trips)
+		{
+			mapTripIds.put(trip, id); 
+			id++; 
+		}
+		
+		for(Block block : fractionalValuesOfBlockVariables.keySet())
+		{
+			List<Trip> tripsInBlock = block.getTripsInBlock(); 
+			Collections.reverse(tripsInBlock);
+			
+			if(tripsInBlock.size() > 1)
+			{
+				for(int t1 = 0; t1 < tripsInBlock.size()-1; t1++)
+				{
+					for(int t2 = t1+1; t2 < tripsInBlock.size(); t2++)
+					{
+						Trip firstTrip = tripsInBlock.get(t1); 
+						Trip secondTrip = tripsInBlock.get(t2); 
+						
+						Assert.assertTrue(secondTrip.getDepartureTime() >= firstTrip.getArrivalTime());
+						
+						int firstTripIndex = mapTripIds.get(firstTrip); 
+						int secondTripIndex = mapTripIds.get(secondTrip); 
+						
+						fractionalTrips[firstTripIndex][secondTripIndex] = fractionalTrips[firstTripIndex][secondTripIndex] + fractionalValuesOfBlockVariables.get(block); 
+					}
+				}
+			}
+		}
+		
+		for(int t1 = 0; t1 < this.trips.size()-1 ; t1++)
+		{
+			for(int t2 = t1+1; t2 < this.trips.size(); t2++)
+			{
+			
+			}
+		}
+		
 	}
 	
 	private List<Duty> dutyVariablesToFix(Map<Duty, Double> fractionalValuesOfDutyVariables)

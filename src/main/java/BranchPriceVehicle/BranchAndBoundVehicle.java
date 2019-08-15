@@ -111,7 +111,7 @@ public class BranchAndBoundVehicle
 		{
 			System.out.println(node + "; " + this.lpObjectivesAtEachNode.get(node));
 			double val1 = Math.round(this.lpObjectivesAtEachNode.get(node) * 100.0) / 100.0; 
-			Assert.assertTrue(val1 - nodeLp >= 0);
+			//Assert.assertTrue(val1 - nodeLp >= 0);
 			nodeLp = val1; 
 		}
 	}

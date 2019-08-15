@@ -112,7 +112,7 @@ public class IntegratedMasterProblem
 		this.allowLineChange = false; 
 		this.allowBlockChange = false; 
 		this.useDeadrunsAndIdleTimesInMaster = false; 
-		this.useSubNetwork = true;  
+		this.useSubNetwork = false;  
 		this.noImprovement = 0; 
 		this.terminationCriteria = 0; 
 		
@@ -221,7 +221,7 @@ public class IntegratedMasterProblem
 				
 				//columnManagement(iterationNumber);
 					
-				if(this.useSubNetwork)
+				//if(this.useSubNetwork)
 				{
 					autoTuneNetworkSize(this.lpObjective);
 				}
@@ -234,7 +234,7 @@ public class IntegratedMasterProblem
 					status = 1; 
 				}
 				
-				if(this.earlyTermination && !this.useSubNetwork)
+				if(this.earlyTermination && this.useDeadrunsAndIdleTimesInMaster)
 				{
 
 					double change = ((this.previousLpObjective - this.lpObjective)/this.previousLpObjective) * 100.00;
@@ -479,12 +479,12 @@ public class IntegratedMasterProblem
 				this.useDeadrunsAndIdleTimesInMaster = true; 
 				noImprovement = 0;
 			}
-			else if(this.useSubNetwork)
+			/*else if(this.useSubNetwork)
 			{
 				System.out.println("Use full subproblem network");
 				this.useSubNetwork = false; 
 				noImprovement = 0;
-			}
+			}*/
 		}
 		this.previousLpObjective = currentLpObjective; 
 	}
@@ -561,7 +561,7 @@ public class IntegratedMasterProblem
 		System.out.println("Number of deadruns generated from vehicle subproblem = " + deadrunsGenerated.size());
 		System.out.println("Number of idle times generated from vehicle subproblem = " + idleTimesGenerated.size());
 		
-		Set<Deadrun> heuristicDeadruns = new HashSet<Deadrun>(); 
+		/*Set<Deadrun> heuristicDeadruns = new HashSet<Deadrun>(); 
 		Set<IdleTime> heuristicIdleTimesGenerated = new HashSet<IdleTime>();
 		List<Trip> heuristicTrips = new ArrayList<Trip>();
 		if(this.useSubNetwork && !this.useDeadrunsAndIdleTimesInMaster)
@@ -591,12 +591,12 @@ public class IntegratedMasterProblem
 			heuristicTrips.addAll(this.trips); 
 			heuristicDeadruns.addAll(this.deadruns); 
 			heuristicIdleTimesGenerated.addAll(this.idleTimes); 
-		}
+		}*/
 		
 		int beforeDeadrunSize = deadrunsGenerated.size(); 
 		int beforeIdleTimeSize = idleTimesGenerated.size(); 
 		double startDriverSub = System.currentTimeMillis(); 
-		DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, heuristicTrips, heuristicDeadruns, heuristicIdleTimesGenerated, this.allowBlockChange, this.useSubNetwork); 
+		DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, this.trips, this.deadruns, this.idleTimes, this.allowBlockChange, true); 
 		dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
 		double endDriverSub = System.currentTimeMillis(); 
 		this.totalTimeOfDriverSub = this.totalTimeOfDriverSub + (endDriverSub - startDriverSub)/(double)1000; 
@@ -666,11 +666,11 @@ public class IntegratedMasterProblem
 				System.out.println("Allow line change");
 				this.allowLineChange = true; 
 			}
-			else if(this.useSubNetwork)
+			/*else if(this.useSubNetwork)
 			{
 				System.out.println("Use full subproblem network");
 				this.useSubNetwork = false; 
-			}
+			}*/
 			else
 			{
 				status = 1; 

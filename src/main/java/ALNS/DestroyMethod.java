@@ -78,7 +78,7 @@ public class DestroyMethod
 		
 		if(chosenDestroyMethod == 0)
 		{
-			randomRemovalOfDuties();   
+			randomRemovalOfDuties();     
 		}
 		else if(chosenDestroyMethod == 1)
 		{
@@ -86,7 +86,8 @@ public class DestroyMethod
 		}
 		else if(chosenDestroyMethod == 2)
 		{
-			worstRemovalOfDuties();  
+			//worstRemovalOfDuties(); 
+			randomRemovalOfBlocks();
 		}
 		
 		System.out.println("Number of blocks removed = " + this.blocksToBeRemoved.size());
@@ -158,25 +159,39 @@ public class DestroyMethod
 	
 	private void worstRemovalOfDuties()
 	{
-		this.dutiesToBeRemoved = new ArrayList<Duty>(); 
-		
-		this.blocksToBeRemoved = new ArrayList<Block>();
-		
-		int numberOfBlocksToRemove = Math.max(2, (int)(this.degreeOfDestruction*this.blocksInSolution.size())); 
-		Collections.shuffle(this.blocksInSolution, this.rnd); 
-		this.blocksToBeRemoved.addAll(this.blocksInSolution.subList(0, numberOfBlocksToRemove)); 
-		/*System.out.println("Number of duties in solution = " + this.dutiesInSolution.size());
-		int numberOfDutiesToDestroy = Math.max(2, (int)(0.2*this.dutiesInSolution.size())); 
-		
+		this.dutiesToBeRemoved = new ArrayList<Duty>();
+		System.out.println("Number of duties in solution = " + this.dutiesInSolution.size());
+		int numberOfDutiesToDestroy = Math.max(2, (int)(this.degreeOfDestruction*this.dutiesInSolution.size())); 
 		Collections.sort(this.dutiesInSolution);
-		Collections.reverse(this.dutiesInSolution);
-		
 		List<Duty> candidates = this.dutiesInSolution.subList(0, 2*numberOfDutiesToDestroy); 
-		Collections.shuffle(candidates, rnd);
-		this.dutiesToBeRemoved.addAll(candidates.subList(0, numberOfDutiesToDestroy)); 
+		Collections.shuffle(candidates, this.rnd);
+		this.dutiesToBeRemoved.addAll(candidates.subList(0, numberOfDutiesToDestroy)); 	
 		
-		this.blocksToBeRemoved = removeBlocksBasedOnRemovedDuties(this.dutiesToBeRemoved);*/
-		this.dutiesToBeRemoved.clear();
+		this.blocksToBeRemoved = new ArrayList<Block>(); 
+		/*this.blocksToBeRemoved = new ArrayList<Block>(); 
+		
+		SequenceGeneration seqGen = new SequenceGeneration(this.trips, this.blocksInSolution, this.dutiesInSolution); 
+		List<Sequence> allSequences = seqGen.getSequences(); 
+		Collections.sort(allSequences);
+		Collections.reverse(allSequences);
+		
+		int numberOfBlocksToDestroy = Math.max(2, (int)(this.degreeOfDestruction*this.blocksInSolution.size()));
+		List<Sequence> candidates = allSequences.subList(0, 2*numberOfBlocksToDestroy); 
+		Collections.shuffle(candidates);
+		for(Sequence seq : candidates)
+		{
+			if(!this.blocksToBeRemoved.contains(seq.getBlockCoveringSequence()))
+			{
+				this.blocksToBeRemoved.add(seq.getBlockCoveringSequence()); 
+			}
+			
+			if(this.blocksToBeRemoved.size() >= numberOfBlocksToDestroy)
+			{
+				break; 
+			}
+		}
+		
+		this.dutiesToBeRemoved = removeDutiesBasedOnRemovedBlocks(this.blocksToBeRemoved); */
 	}
 	
 	private List<Duty> removeDutiesBasedOnRemovedBlocks(List<Block> blocksToBeRemoved)

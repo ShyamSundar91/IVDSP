@@ -35,9 +35,16 @@ public class BranchAndBoundDriver
 	@Getter
 	private List<Duty> dutiesInSolution; 
 	private List<BBNodeDriver> nodes; 
-	private Map<Integer, Double> lpObjectivesAtEachNode; 
+	@Getter
+	private Map<Integer,List<Double>> lpObjectivesAtEachNode; 
 	@Getter
 	private double objective; 
+	@Getter
+	private double totalTimeSpentInMaster; 
+	@Getter
+	private double totalTimeSpentInSubproblem; 
+	@Getter
+	private int nodeNo; 
 	public BranchAndBoundDriver(List<Trip> trips, List<Block> blocksInSolution, Set<Deadrun> deadrunsInSolution, Set<IdleTime> idleTimesInSolution, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Duty, Integer> initialAndDutiesGenerated, boolean earlyTermination) throws IloException
 	{
 		this.trips = trips; 
@@ -49,8 +56,11 @@ public class BranchAndBoundDriver
 		
 		this.dutiesGenerated = new ArrayList<Duty>(); 
 		this.nodes = new ArrayList<BBNodeDriver>();
-		this.lpObjectivesAtEachNode = new HashMap<Integer, Double>(); 
+		this.lpObjectivesAtEachNode = new HashMap<Integer, List<Double>>(); 
 		this.objective = Double.MAX_VALUE; 
+		this.totalTimeSpentInMaster = 0; 
+		this.totalTimeSpentInSubproblem = 0; 
+		this.nodeNo = 0;
 		
 		createRootNode(); 
 		algorithm(); 
@@ -64,19 +74,20 @@ public class BranchAndBoundDriver
 	
 	private void algorithm() throws IloException
 	{
-		int nodeNo = 0; 
 		while(!this.nodes.isEmpty())
 		{
 			System.out.println("Node number = " + nodeNo);
 			long start = System.currentTimeMillis(); 
 			BBNodeDriver currentNode = this.nodes.get(0); 
 			currentNode.solveCG();
-			this.lpObjectivesAtEachNode.put(nodeNo, currentNode.getLpObjective()); 
 			long end = System.currentTimeMillis(); 
-			if(nodeNo == 0)
-			{
-				System.out.println("Time taken at root node = " + (double)(end-start)/1000.00);
-			}
+			this.totalTimeSpentInMaster = this.totalTimeSpentInMaster + currentNode.getTotalTimeSpentInMaster(); 
+			this.totalTimeSpentInSubproblem = this.totalTimeSpentInSubproblem + currentNode.getTotalTimeSpentInSub();
+			List<Double> objTime = new ArrayList<Double>(); 
+			objTime.add(currentNode.getLpObjective()); 
+			objTime.add((double)(end-start)/1000.00); 
+			this.lpObjectivesAtEachNode.put(nodeNo, objTime); 
+			
 			if(!currentNode.isSolutionInteger())
 			{
 				BranchingDecisionDriver branchingDecision = new BranchingDecisionDriver(currentNode);
@@ -103,14 +114,14 @@ public class BranchAndBoundDriver
 			} 
 		}*/
 		
-		double nodeLp = 0; 
+		/*double nodeLp = 0; 
 		for(Integer node : this.lpObjectivesAtEachNode.keySet())
 		{
 			System.out.println(node + "; " + this.lpObjectivesAtEachNode.get(node));
 			double val1 = Math.round(this.lpObjectivesAtEachNode.get(node) * 100.0) / 100.0; 
 			//Assert.assertTrue(val1 - nodeLp >= 0);
 			nodeLp = val1; 
-		}
+		}*/
 		
 	}
 

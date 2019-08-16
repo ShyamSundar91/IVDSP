@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -57,6 +58,9 @@ public class LocalSearch
 	private Map<Integer, List<Integer>> scoreAtEachIteration; 
 	private Map<Integer, List<Double>> objectiveAtEachIteration;
 	private boolean initalSolutionLocalSearch; 
+	
+	private int[] totalNumberOfTimesMethodChosen; 
+	private double[] totalTimeTakenOfRepairMethods; 
 	public LocalSearch(List<Trip> allTrips, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective, boolean initalSolutionLocalSearch, int maxiterations) throws IloException
 	{
 		this.allTrips = allTrips;  
@@ -109,25 +113,36 @@ public class LocalSearch
 		this.maxIterations = maxIterations; 
 		this.segmentSize = 25; 
 		
-		int numberOfDestroyMethods = 2; 
+		int numberOfDestroyMethods = 2;
+		if(!this.initalSolutionLocalSearch)
+		{
+			numberOfDestroyMethods = 3;
+		}
 		double initialProbabilities = 1.0/(double)(numberOfDestroyMethods); 
 		this.destroyWeights = new double[numberOfDestroyMethods]; 
 		this.destroyProbabilities = new double[numberOfDestroyMethods]; 
 		this.destroyScoreInSegment = new int[numberOfDestroyMethods]; 
 		this.destoryChosenInSegement = new int[numberOfDestroyMethods]; 
+		this.totalNumberOfTimesMethodChosen = new int[numberOfDestroyMethods]; 
+		this.totalTimeTakenOfRepairMethods = new double[numberOfDestroyMethods]; 
 		
 		Arrays.fill(destroyWeights, 1.0);
 		Arrays.fill(this.destroyProbabilities, initialProbabilities);
 		Arrays.fill(this.destoryChosenInSegement, 0);
 		Arrays.fill(this.destroyScoreInSegment, 0);
+		
+		Arrays.fill(this.totalNumberOfTimesMethodChosen, 0);
+		Arrays.fill(this.totalTimeTakenOfRepairMethods, 0.0);
 	}
 	
 	private void algorithm() throws IloException
 	{
-		 
-		for(int i = 0; i < maxIterations; i++)
+		int status = 0; 
+		int i = 0; 
+		//for(int i = 0; i < maxIterations; i++)
+		while(status != 1)
 		{
-			int selectedDestroyMethod = selectDestroyMethod(); 
+			int selectedDestroyMethod = selectDestroyMethod(i); 
 			int scoreInIteration = 0; 
 			System.out.println("*****************************************" + " Local search iteration number = " + i + " *****************************************");
 			System.out.println("Selected destroy method = " + selectedDestroyMethod);
@@ -142,7 +157,11 @@ public class LocalSearch
 			List<Trip> uncoveredTripsOfVehicle = destroy.getUncoveredTripsOfVehicle();
 			List<Trip> uncoveredTripsOfDriver = destroy.getUncoveredTripsOfDriver(); 
 			
+			double start = System.currentTimeMillis(); 
 			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver, this.initalSolutionLocalSearch); 
+			double end = System.currentTimeMillis(); 
+			this.totalNumberOfTimesMethodChosen[selectedDestroyMethod] = this.totalNumberOfTimesMethodChosen[selectedDestroyMethod] + 1; 
+			this.totalTimeTakenOfRepairMethods[selectedDestroyMethod] = this.totalTimeTakenOfRepairMethods[selectedDestroyMethod] + (end-start)/(double)(1000); 
 			
 			if(this.bestObjective - repair.getObjective() > 1e-3)
 			{
@@ -168,6 +187,26 @@ public class LocalSearch
 			}
 			
 			kpi(i); 
+			
+			i++; 
+			if(i >= this.maxIterations)
+			{
+				boolean stop = true; 
+				for(int j = 0; j < this.destroyWeights.length; j++)
+				{
+					if(this.destroyWeights[j] > 2)
+					{
+						this.maxIterations = this.maxIterations + 100; 
+						stop = false; 
+						break; 
+					}
+				}
+				
+				if(stop)
+				{
+					status = 1; 
+				}
+			}
 		}
 	}
 	
@@ -219,11 +258,12 @@ public class LocalSearch
 		Arrays.fill(this.destroyScoreInSegment, 0);
 	}
 	
-	private int selectDestroyMethod()
+	private int selectDestroyMethod(int iter)
 	{
 		int selectedDestroyMethod = 0; 
 		double sumOfDestroyProbabilites = 0.0; 
-		double rDestroy = Math.random();  
+		Random rnd = new Random(iter); 
+		double rDestroy = (double)rnd.nextInt(100)/(double)100;
 		for(int i = 0; i < this.destroyProbabilities.length; i++)
 		{
 			sumOfDestroyProbabilites = sumOfDestroyProbabilites + this.destroyProbabilities[i]; 
@@ -263,6 +303,14 @@ public class LocalSearch
 				System.out.print(w + "; ");
 			});
 			System.out.println();
+		}
+		
+		System.out.println("Time taken by repair methods...");
+		System.out.println("Total number of iterations performed = " + this.maxIterations);
+		System.out.println("Number of iterations; Number of times selected; Total time; Average time");
+		for(int i = 0 ; i < this.totalNumberOfTimesMethodChosen.length; i++)
+		{
+			System.out.println(this.totalNumberOfTimesMethodChosen[i] + "; " + this.totalTimeTakenOfRepairMethods[i] + "; " + (this.totalTimeTakenOfRepairMethods[i]/(double)this.totalNumberOfTimesMethodChosen[i]));
 		}
 	}
 

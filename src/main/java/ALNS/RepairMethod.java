@@ -100,7 +100,18 @@ public class RepairMethod
 		}
 		else
 		{
-			repairIntegrated();
+			if(this.chosenDestroyMethod == 0)
+			{
+				repairDriverSchedulingProblem(); 
+			}
+			else if(this.chosenDestroyMethod == 1)
+			{
+				repairVehicleAndDriverSequentially();
+			}
+			else if(this.chosenDestroyMethod == 2)
+			{
+				repairIntegrated();
+			}
 		}
 		  
 	}
@@ -120,7 +131,7 @@ public class RepairMethod
 			initialDuties.put(duty, 0);
 		}
 		
-		BranchAndBoundDriver bb = new BranchAndBoundDriver(this.allTrips, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, false); 
+		BranchAndBoundDriver bb = new BranchAndBoundDriver(this.allTrips, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true); 
 		this.dutiesInSolution.addAll(bb.getDutiesInSolution()); 
 		this.blocksInSoution.addAll(this.intermediateBlockSolution); 
 		this.objective = 0.0;
@@ -151,7 +162,7 @@ public class RepairMethod
 		
 		
 		this.objective = 0; 
-		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks, this.deadrunMultipliers, this.idleTimeMultipliers, false);
+		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks, this.deadrunMultipliers, this.idleTimeMultipliers, true);
 		this.blocksInSoution.addAll(bbVehicle.getBlocksInSolution()); 
 		this.deadrunInSolution.addAll(bbVehicle.getDeadrunsInSolution()); 
 		this.idleTimeInSolution.addAll(bbVehicle.getIdleTimesInSolution()); 
@@ -186,7 +197,7 @@ public class RepairMethod
 			initialDuties.put(duty, 1); 	
 		}
 		
-		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSoution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, false);  
+		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSoution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true);  
 		this.dutiesInSolution = dsp.getDutiesInSolution(); 
 		this.objective = this.objective + dsp.getObjective(); 
 	}

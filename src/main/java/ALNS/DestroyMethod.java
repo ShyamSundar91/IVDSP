@@ -74,7 +74,7 @@ public class DestroyMethod
 		this.uncoveredTripsOfDriver = new ArrayList<Trip>(); 
 		this.iteration = iteration; 
 		this.rnd = new Random(this.iteration); 
-		this.degreeOfDestruction = 0.1; 
+		this.degreeOfDestruction = 0.075; 
 		this.initalSolutionLocalSearch = initalSolutionLocalSearch; 
 		
 		if(this.initalSolutionLocalSearch)
@@ -96,11 +96,15 @@ public class DestroyMethod
 		{
 			if(chosenDestroyMethod == 0)
 			{
-				randomRemovalOfBlocks();  
+				randomRemovalOfDuties();     
 			}
 			else if(chosenDestroyMethod == 1)
 			{
-				worstRemoval(); 
+				randomRemovalOfBlocks(); 
+			}
+			else if(chosenDestroyMethod == 2)
+			{
+				randomRemovalOfBlocks(); 
 			}
 		}
 		

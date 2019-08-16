@@ -49,6 +49,8 @@ public class BBNodeVehicle
 	private boolean earlyTermination; 
 	private boolean allowLineChange; 
 	private double lpObjective; 
+	private double totalTimeSpentInMaster; 
+	private double totalTimeSpentInSub; 
 	public BBNodeVehicle(List<Trip> trips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraph, Map<Block, Integer> initialBlocksAndGenerated, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, boolean earlyTermination) throws IloException
 	{
 		this.trips = trips; 
@@ -63,6 +65,8 @@ public class BBNodeVehicle
 		}
 		this.earlyTermination = earlyTermination; 
 		this.allowLineChange = false; 
+		this.totalTimeSpentInMaster = 0;
+		this.totalTimeSpentInSub = 0; 
 		
 		this.cplex = new IloCplex(); 
 		this.cplex.addMinimize(); 
@@ -89,10 +93,13 @@ public class BBNodeVehicle
 			
 			Map<Trip, Double> tripsVehicleDual = new HashMap<Trip, Double>();
 			
+			double startMP = System.currentTimeMillis(); 
 			if(this.cplex.solve())
 			{
 				System.out.println("LP Objective = " + this.cplex.getObjValue());
 				lpObjective = this.cplex.getObjValue(); 
+				double endMP = System.currentTimeMillis(); 
+				this.totalTimeSpentInMaster = this.totalTimeSpentInMaster + (endMP - startMP)/(double)1000; 
 				for(Trip trip : this.trips)
 				{
 					tripsVehicleDual.put(trip, 0.0); 
@@ -132,9 +139,11 @@ public class BBNodeVehicle
 					 
 					Set<Block> blocksGenerated = new HashSet<Block>(); 
 					
+					double startSub = System.currentTimeMillis(); 
 					VehicleSubproblem sub = new VehicleSubproblem(iteration,this.trips, this.vehicleGraph, tripsVehicleDual, this.deadrunMultipliers, this.deadrunUpperLimit, this.idleTimeMultipliers, this.allowLineChange, false); 
 					blocksGenerated.addAll(sub.getBlocksGenerated()); 
-					
+					double endSub = System.currentTimeMillis(); 
+					this.totalTimeSpentInSub = this.totalTimeSpentInSub + (endSub - startSub)/(double)10000; 
 					if(!blocksGenerated.isEmpty())
 					{
 						for(Block block : blocksGenerated)

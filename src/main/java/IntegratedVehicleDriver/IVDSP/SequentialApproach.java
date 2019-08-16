@@ -44,6 +44,15 @@ public class SequentialApproach
 	private List<Duty> dutiesInSolution; 
 	private double totalObjective; 
 	
+	private int nodesVehicle; 
+	private double masterVehicle; 
+	private double subVehicle;
+	private Map<Integer, List<Double>> vehicleLp; 
+	
+	private int nodesDriver; 
+	private double masterDriver; 
+	private double subDriver;
+	private Map<Integer, List<Double>> driverLp; 
 	public SequentialApproach(List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs) throws IloException
 	{
 		this.allTrips = allTrips; 
@@ -56,7 +65,25 @@ public class SequentialApproach
     	long start1 = System.currentTimeMillis(); 
 		driverSchedulingProblem(); 
 		long end1 = System.currentTimeMillis();
+		System.out.println("Number of vehicle nodes processed = " + this.nodesVehicle);
+		System.out.println("Node; LP Objective; Time");
+		for(Integer lp : this.vehicleLp.keySet())
+		{
+			List<Double> obj = this.vehicleLp.get(lp); 
+			System.out.println(lp + "; " + obj.get(0) + "; " + obj.get(1));
+		}
+		System.out.println("Total time spent in vehicle master problem = " + this.masterVehicle);
+		System.out.println("Total time spent in vehicle subproblem = " + this.subVehicle);
 		System.out.println("Total time for vehicle scheduling problem= " + (double)(end-start)/1000.00);
+		System.out.println("Number of driver nodes processed = " + this.nodesDriver);
+		System.out.println("Node; LP Objective; Time");
+		for(Integer lp : this.driverLp.keySet())
+		{
+			List<Double> obj = this.driverLp.get(lp); 
+			System.out.println(lp + "; " + obj.get(0) + "; " + obj.get(1));
+		}
+		System.out.println("Total time spent in driver master problem = " + this.masterDriver);
+		System.out.println("Total time spent in driver subproblem = " + this.subDriver);
     	System.out.println("Total time for driver scheduling problem= " + (double)(end1-start1)/1000.00);
 		calculateObjective(); 
 	}
@@ -67,6 +94,10 @@ public class SequentialApproach
 		this.blocksInSolution = bbVehicle.getBlocksInSolution();
 		this.deadrunsInSolution = new HashSet<Deadrun>(bbVehicle.getDeadrunsInSolution()); 
 		this.idleTimesInSolution = new HashSet<IdleTime>(bbVehicle.getIdleTimesInSolution()); 
+		this.nodesVehicle = bbVehicle.getNodeNo(); 
+		this.masterVehicle = bbVehicle.getTotalTimeSpentInMaster(); 
+		this.subVehicle = bbVehicle.getTotalTimeSpentInSubproblem();
+		this.vehicleLp = bbVehicle.getLpObjectivesAtEachNode(); 
 	}
 	
 	private void driverSchedulingProblem() throws IloException
@@ -93,6 +124,10 @@ public class SequentialApproach
 		
 		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.driverGraphs, new HashMap<Duty, Integer>(), true);  
 		this.dutiesInSolution = dsp.getDutiesInSolution(); 
+		this.nodesDriver = dsp.getNodeNo(); 
+		this.masterDriver = dsp.getTotalTimeSpentInMaster(); 
+		this.subDriver = dsp.getTotalTimeSpentInSubproblem(); 
+		this.driverLp = dsp.getLpObjectivesAtEachNode(); 
 	}
 	
 	private void calculateObjective()

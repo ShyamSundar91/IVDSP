@@ -229,7 +229,12 @@ public class IntegratedMasterProblem
 				
 				long end = System.currentTimeMillis(); 
 				double totalTime = (end- start)/1000.00; 
-				if(totalTime > 30 && this.earlyTermination)
+				int timLim = 3; 
+				if(this.trips.size() > 200)
+				{
+					timLim = 30;
+				}
+				if(totalTime > timLim && this.earlyTermination)
 				{
 					System.out.println("Time limit reached");
 					status = 1; 

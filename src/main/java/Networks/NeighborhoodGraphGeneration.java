@@ -43,7 +43,7 @@ public class NeighborhoodGraphGeneration
 		//restrictLineChangesAndIdleTime(); 
 		restrictLineChanges(); 
 		//restrictDeadrunsAndIdleTimes(); 
-		restrictDeadruns(); 
+		//restrictDeadruns(); 
 		entireGraph(); 
 	}
 	
@@ -151,7 +151,7 @@ public class NeighborhoodGraphGeneration
 		DriverGraphGeneration driverGraphgen = new DriverGraphGeneration(this.dutyTypeDepots, allDriverTravels, allNodes, allTrips, deadrunsInRestrictedGraph, vehicleGraphsCopy); 
 		Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy = driverGraphgen.getDriverGraphs(); 
 		
-		NeighborhoodGraph neigh = new NeighborhoodGraph(1, "Restricted Line Change Graph", vehicleGraphsCopy, driverGraphsCopy); 
+		NeighborhoodGraph neigh = new NeighborhoodGraph(0, "Restricted Line Change Graph", vehicleGraphsCopy, driverGraphsCopy); 
 		this.neighborhoodGraphs.add(neigh); 
 	}
 	
@@ -268,7 +268,7 @@ public class NeighborhoodGraphGeneration
 		Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphsCopy = graphCopy.getVehicleGraphsCopy(); 
 		Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy = graphCopy.getDriverGraphsCopy(); 
 		
-		NeighborhoodGraph neigh = new NeighborhoodGraph(4, "Entire Graph", vehicleGraphsCopy, driverGraphsCopy); 
+		NeighborhoodGraph neigh = new NeighborhoodGraph(1, "Entire Graph", vehicleGraphsCopy, driverGraphsCopy); 
 		this.neighborhoodGraphs.add(neigh); 
 	}
 }

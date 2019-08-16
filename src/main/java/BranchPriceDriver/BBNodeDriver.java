@@ -55,6 +55,8 @@ public class BBNodeDriver
 	private boolean allowBlockChange; 
 	private boolean useSubNetwork; 
 	private double lpObjective; 
+	private double totalTimeSpentInMaster; 
+	private double totalTimeSpentInSub; 
 	 
 	public BBNodeDriver(List<Trip> trips, List<Block> blocksInSolution, Set<Deadrun> deadrunsInSolution, Set<IdleTime> idleTimesInSolution,
 			Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Duty, Integer> initialAndDutiesGenerated, boolean earlyTermination) throws IloException
@@ -104,10 +106,13 @@ public class BBNodeDriver
 			Map<Deadrun, Double> deadrunsUpperLimitDual = new HashMap<Deadrun, Double>(); 
 			Map<IdleTime, Double> idleTimeDual = new HashMap<IdleTime, Double>(); 
 			
+			double startMP = System.currentTimeMillis(); 
 			if(this.cplex.solve())
 			{
 				System.out.println("LP Objective = " + this.cplex.getObjValue());
 				lpObjective = this.cplex.getObjValue(); 
+				double endMP = System.currentTimeMillis(); 
+				this.totalTimeSpentInMaster = this.totalTimeSpentInMaster + (endMP - startMP)/(double)1000; 
 				
 				for(Trip trip : this.trips)
 				{
@@ -131,7 +136,7 @@ public class BBNodeDriver
 				if(this.earlyTermination || !this.allowBlockChange)
 				{
 					double change = ((previousObj- lpObjective)/previousObj) * 100.00; 
-					if(change < 0.001)
+					if(change < 0.01)
 					{
 						noImprovement++; 
 					}
@@ -155,34 +160,39 @@ public class BBNodeDriver
 					previousObj = lpObjective;
 				}
 				
-				
-				Set<Duty> dutiesGenerated = new HashSet<Duty>(); 
-				DriverSubproblem driverSubproblem = new DriverSubproblem(iteration, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimeDual, this.trips, this.deadrunsInSolution, this.idleTimesInSolution, this.allowBlockChange, this.useSubNetwork); 
-				dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
-				
-				for(Duty duty : dutiesGenerated)
+				if(status != 1)
 				{
-					Assert.assertTrue(!this.dutyVariables.keySet().contains(duty));
-				}
-				
-				if(!dutiesGenerated.isEmpty())
-				{
+					Set<Duty> dutiesGenerated = new HashSet<Duty>(); 
+					double startSub = System.currentTimeMillis(); 
+					DriverSubproblem driverSubproblem = new DriverSubproblem(iteration, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimeDual, this.trips, this.deadrunsInSolution, this.idleTimesInSolution, this.allowBlockChange, this.useSubNetwork); 
+					dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
+					double endSub = System.currentTimeMillis(); 
+					this.totalTimeSpentInSub = this.totalTimeSpentInSub + (endSub - startSub)/(double)10000; 
+					
 					for(Duty duty : dutiesGenerated)
 					{
-						this.initialAndDutiesGenerated.put(duty, 0); 
+						Assert.assertTrue(!this.dutyVariables.keySet().contains(duty));
 					}
-					addDutyVariables(dutiesGenerated); 
-				}
-				else
-				{
-					if(!this.allowBlockChange)
+					
+					if(!dutiesGenerated.isEmpty())
 					{
-						this.allowBlockChange = true; 
-						System.out.println("Allow Block Change");
+						for(Duty duty : dutiesGenerated)
+						{
+							this.initialAndDutiesGenerated.put(duty, 0); 
+						}
+						addDutyVariables(dutiesGenerated); 
 					}
 					else
 					{
-						status = 1; 
+						if(!this.allowBlockChange)
+						{
+							this.allowBlockChange = true; 
+							System.out.println("Allow Block Change");
+						}
+						else
+						{
+							status = 1; 
+						}
 					}
 				}
 			}
@@ -232,12 +242,12 @@ public class BBNodeDriver
 			Assert.assertTrue(value < 1e-3);		
 		}
 		
-		/*for(IdleTime idleTime : this.idleTimesInSolution)
+		for(IdleTime idleTime : this.idleTimesInSolution)
 		{
 			double value = this.cplex.getValue(this.slackIdleTimeDuty.get(idleTime)); 
-			System.out.println(idleTime.getArrivalTime() - idleTime.getDepartureTime() + ", " + idleTime.getNode().getNodeId() + ", " + idleTime.getPredecessotTrip().getTripId() + ", " + idleTime.getSuccessorTrip().getTripId());
+			//System.out.println(idleTime.getArrivalTime() - idleTime.getDepartureTime() + ", " + idleTime.getNode().getNodeId() + ", " + idleTime.getPredecessotTrip().getTripId() + ", " + idleTime.getSuccessorTrip().getTripId());
 			Assert.assertTrue(value < 1e-3);
-		}*/
+		}
 	}
 	
 	

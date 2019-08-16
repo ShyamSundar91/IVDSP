@@ -94,6 +94,7 @@ public class Master
 	private List<Duty> bestDutySolution;
 	private double bestObjective; 
 	private boolean performedLocalSearch; 
+	private boolean useDeadrunsAndIdleTimesInMasterProblem; 
 	public Master(List<Trip> trips, Set<VehicleTravel> allVehicleTravels, List<NeighborhoodGraph> neighborhoodGraphs) throws IloException
 	{
 		this.trips = trips; 
@@ -110,9 +111,10 @@ public class Master
 		this.bestDutySolution = new ArrayList<Duty>(); 
 		this.bestObjective = Double.MAX_VALUE; 
 		this.performedLocalSearch = false; 
+		this.useDeadrunsAndIdleTimesInMasterProblem = true; 
 		
 		selectNeighborhoodGraph(); 
-		getInitialSolution(); 
+		//getInitialSolution(); 
 		
 
 		this.noImprovement = 0; 
@@ -143,6 +145,7 @@ public class Master
 		this.totalTimeOfLocalSearch = 0.0; 
 		
 		columnGeneration(); 
+		System.out.println("Neighborhood" + "; " + "Deadruns" + "; " + "Idle times" + "; " + "Blocks" + "; " + "Duties");
 		for(List<Double> lb : this.lowerBound)
 		{
 			for(Double l : lb)
@@ -221,7 +224,9 @@ public class Master
 			
 			List<Double> iter = new ArrayList<Double>(); 
 			iter.add((double)this.selectedNeighborhoodGraph);
-			iter.add(this.bestObjective); 
+			//iter.add(this.bestObjective); 
+			iter.add((double)this.deadruns.size()); 
+			iter.add((double)this.idleTimes.size()); 
 			iter.add((double)this.blockVariables.size());
 			iter.add((double)this.dutyVariables.size()); 
 			double startMP = System.currentTimeMillis(); 
@@ -266,7 +271,7 @@ public class Master
 				iter.add(totalTime); 
 				this.lowerBound.add(iter); 
 				System.out.println(totalTime);
-				if(totalTime > 28800)
+				if(totalTime > 36000)
 				{
 					status = 1; 
 				}
@@ -301,10 +306,9 @@ public class Master
 					}
 				}
 				
-				//if(this.initialSolChanged)
-				{
-					columnManagement(iterationNumber);
-				}
+				
+				columnManagement(iterationNumber);
+				
 			
 			
 				if(status != 1)
@@ -633,12 +637,16 @@ public class Master
 			
 			Set<Deadrun> heuristicDeadruns = new HashSet<Deadrun>(); 
 			Set<IdleTime> heuristicIdleTimesGenerated = new HashSet<IdleTime>();
-			List<Trip> heuristicTrips = new ArrayList<Trip>();
+			if(this.useDeadrunsAndIdleTimesInMasterProblem)
+			{
+				heuristicDeadruns.addAll(this.deadruns); 
+				heuristicIdleTimesGenerated.addAll(this.idleTimes); 
+			}
 			
 			int beforeDeadrunSize = deadrunsGenerated.size(); 
 			int beforeIdleTimeSize = idleTimesGenerated.size(); 
 			double startDriverSub = System.currentTimeMillis(); 
-			DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, heuristicTrips, heuristicDeadruns, heuristicIdleTimesGenerated, true, false); 
+			DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, this.trips, heuristicDeadruns, heuristicIdleTimesGenerated, true, this.useDeadrunsAndIdleTimesInMasterProblem); 
 			dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
 			double endDriverSub = System.currentTimeMillis(); 
 			this.totalTimeOfDriverSub = this.totalTimeOfDriverSub + (endDriverSub - startDriverSub)/(double)1000; 
@@ -703,6 +711,14 @@ public class Master
 			if(this.selectedNeighborhoodGraph < this.neighborhoodGraphs.size())
 			{
 				selectNeighborhoodGraph(); 
+			}
+			else if(this.useDeadrunsAndIdleTimesInMasterProblem)
+			{
+				System.out.println("Open driver subproblem for new deadruns and idle times");
+				this.useDeadrunsAndIdleTimesInMasterProblem = false; 
+				this.initialSolChanged = false;
+				this.selectedNeighborhoodGraph++; 
+				this.noImprovement = 0;
 			}
 			else
 			{
@@ -805,7 +821,7 @@ public class Master
 			
 			IloColumn slack = this.cplex.column(this.cplex.getObjective(), 10000); 
 			slack = slack.and(this.cplex.column(tripDriverConstraints.get(trip), 1)); 
-			this.slackTripDuty.put(trip, this.cplex.numVar(slack, 0, 1, "slackBlock_" + trip.getTripId())); 
+			this.slackTripDuty.put(trip, this.cplex.numVar(slack, 0, 1, "slackDriver_" + trip.getTripId())); 
 		}
 		
 		return tripDriverConstraints; 

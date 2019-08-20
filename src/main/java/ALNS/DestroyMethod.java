@@ -74,7 +74,17 @@ public class DestroyMethod
 		this.uncoveredTripsOfDriver = new ArrayList<Trip>(); 
 		this.iteration = iteration; 
 		this.rnd = new Random(this.iteration); 
-		this.degreeOfDestruction = 0.075; 
+		this.degreeOfDestruction = 0.1; 
+		if(this.trips.size() < 250)
+		{
+			this.degreeOfDestruction = 0.3; 
+		}
+		else if(this.trips.size() < 500)
+		{
+			this.degreeOfDestruction = 0.2; 
+		}
+		System.out.println("Degree of destruction = " + this.degreeOfDestruction);
+		
 		this.initalSolutionLocalSearch = initalSolutionLocalSearch; 
 		
 		if(this.initalSolutionLocalSearch)

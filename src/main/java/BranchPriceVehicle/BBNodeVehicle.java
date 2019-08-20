@@ -47,6 +47,7 @@ public class BBNodeVehicle
 	private Map<Block, Double> fractionalValuesOfBlockVariables; 
 	private boolean solutionInteger; 
 	private boolean earlyTermination; 
+	private int noImprovement; 
 	private boolean allowLineChange; 
 	private double lpObjective; 
 	private double totalTimeSpentInMaster; 
@@ -65,6 +66,7 @@ public class BBNodeVehicle
 		}
 		this.earlyTermination = earlyTermination; 
 		this.allowLineChange = false; 
+		this.noImprovement = 0; 
 		this.totalTimeSpentInMaster = 0;
 		this.totalTimeSpentInSub = 0; 
 		
@@ -84,7 +86,7 @@ public class BBNodeVehicle
 		this.cplex.setOut(null);
 		this.cplex.setParam(IloCplex.IntParam.ParallelMode, 1);
 		double previousObj = Double.MAX_VALUE;
-		int noImprovement = 0; 
+		 
 		while(status != 1)
 		{
 			System.out.println("***************************************************");
@@ -110,7 +112,7 @@ public class BBNodeVehicle
 				if(this.earlyTermination || !this.allowLineChange)
 				{
 					double change = ((previousObj- lpObjective)/previousObj) * 100.00; 
-					if(change < 0.01)
+					if(change < 0.001)
 					{
 						noImprovement++; 
 					}
@@ -124,6 +126,7 @@ public class BBNodeVehicle
 						if(!this.allowLineChange)
 						{
 							this.allowLineChange = true; 
+							noImprovement = 0; 
 							System.out.println("Allow Line Change");
 						}
 						else
@@ -157,6 +160,7 @@ public class BBNodeVehicle
 						if(!this.allowLineChange)
 						{
 							this.allowLineChange = true; 
+							this.noImprovement = 0; 
 							System.out.println("Allow Line Change");
 						}
 						else
@@ -260,10 +264,10 @@ public class BBNodeVehicle
 		for(Trip trip : this.trips)
 		{
 			double rhs = 1; 
-			if(this.initialBlocksAndGenerated.isEmpty() && this.trips.size() > 400)
+			/*if(this.initialBlocksAndGenerated.isEmpty() && this.trips.size() > 400)
 			{
 				rhs = Double.MAX_VALUE; 
-			}
+			}*/
 			tripConstraints.put(trip, this.cplex.addRange(1, rhs, "ctTripVehicle_" + trip.getTripId())); 
 			
 			IloColumn slack = this.cplex.column(this.cplex.getObjective(), 10000); 

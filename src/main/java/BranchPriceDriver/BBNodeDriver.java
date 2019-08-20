@@ -53,6 +53,7 @@ public class BBNodeDriver
 	private boolean solutionInteger; 
 	private boolean earlyTermination; 
 	private boolean allowBlockChange; 
+	private int noImprovement; 
 	private boolean useSubNetwork; 
 	private double lpObjective; 
 	private double totalTimeSpentInMaster; 
@@ -69,6 +70,7 @@ public class BBNodeDriver
 		this.initialAndDutiesGenerated = initialAndDutiesGenerated; 
 		this.earlyTermination = earlyTermination; 
 		this.allowBlockChange = false; 
+		this.noImprovement = 0; 
 		this.useSubNetwork = false; 
 		
 		this.cplex = new IloCplex(); 
@@ -89,7 +91,7 @@ public class BBNodeDriver
 	{
 		int status = 0; 
 		int iteration = 0; 
-		int noImprovement = 0; 
+		 
 		double previousObj = Double.MAX_VALUE; 
 		
 		this.cplex.setOut(null);
@@ -136,7 +138,7 @@ public class BBNodeDriver
 				if(this.earlyTermination || !this.allowBlockChange)
 				{
 					double change = ((previousObj- lpObjective)/previousObj) * 100.00; 
-					if(change < 0.01)
+					if(change < 0.001)
 					{
 						noImprovement++; 
 					}
@@ -150,6 +152,7 @@ public class BBNodeDriver
 						if(!this.allowBlockChange)
 						{
 							this.allowBlockChange = true; 
+							noImprovement = 0;
 							System.out.println("Allow Block Change");
 						}
 						else
@@ -187,6 +190,7 @@ public class BBNodeDriver
 						if(!this.allowBlockChange)
 						{
 							this.allowBlockChange = true; 
+							this.noImprovement = 0; 
 							System.out.println("Allow Block Change");
 						}
 						else

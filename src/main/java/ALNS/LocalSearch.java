@@ -192,15 +192,19 @@ public class LocalSearch
 			if(i >= this.maxIterations)
 			{
 				boolean stop = true; 
-				for(int j = 0; j < this.destroyWeights.length; j++)
+				/*if(!this.initalSolutionLocalSearch)
 				{
-					if(this.destroyWeights[j] > 2)
+					for(int j = 0; j < this.destroyWeights.length; j++)
 					{
-						this.maxIterations = this.maxIterations + 100; 
-						stop = false; 
-						break; 
+						if(this.destroyWeights[j] > 2)
+						{
+							this.maxIterations = this.maxIterations + 100; 
+							stop = false; 
+							break; 
+						}
 					}
-				}
+				}*/
+				
 				
 				if(stop)
 				{

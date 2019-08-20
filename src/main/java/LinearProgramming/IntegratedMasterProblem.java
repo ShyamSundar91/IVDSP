@@ -232,7 +232,7 @@ public class IntegratedMasterProblem
 				int timLim = 3; 
 				if(this.trips.size() > 200)
 				{
-					timLim = 30;
+					timLim = 60;
 				}
 				if(totalTime > timLim && this.earlyTermination)
 				{
@@ -479,7 +479,7 @@ public class IntegratedMasterProblem
 				this.allowLineChange = true; 
 				noImprovement = 0; 
 			}
-			else if(!this.useDeadrunsAndIdleTimesInMaster)
+			/*else if(!this.useDeadrunsAndIdleTimesInMaster)
 			{
 				System.out.println("Use Deadruns and idle times in master");
 				this.useDeadrunsAndIdleTimesInMaster = true; 
@@ -665,11 +665,13 @@ public class IntegratedMasterProblem
 			if(!this.allowBlockChange)
 			{
 				System.out.println("Allow block change");
+				this.noImprovement = 0; 
 				this.allowBlockChange = true; 
 			}
 			else if(!this.allowLineChange)
 			{
 				System.out.println("Allow line change");
+				this.noImprovement = 0; 
 				this.allowLineChange = true; 
 			}
 			/*else if(this.useSubNetwork)

@@ -97,7 +97,7 @@ public class VehicleGraph
 				{
 					int endTime = tripVertex.getTrip().getDepartureTime(); 
 				    int startTime = endTime - travel.get().getDuration(); 
-				    Deadrun deadrun = new Deadrun(this.vehicleDepot, tripVertex.getTrip().getDepartureNode(), startTime, endTime, true, false, -1, tripVertex.getTrip().getTripId()); 
+				    Deadrun deadrun = new Deadrun(this.vehicleDepot, tripVertex.getTrip().getDepartureNode(), startTime, endTime, travel.get().getDistance(), true, false, -1, tripVertex.getTrip().getTripId()); 
 				    //if(!this.deadruns.contains(deadrun))
 				    {
 				    	this.deadruns.add(deadrun); 
@@ -133,7 +133,7 @@ public class VehicleGraph
 					int startTime = tripVertex.getTrip().getArrivalTime();
 					int endTime = startTime + travel.get().getDuration(); 
 					
-					Deadrun deadrun = new Deadrun(tripVertex.getTrip().getArrivalNode(), this.vehicleDepot, startTime, endTime, false, true, tripVertex.getTrip().getTripId(), Integer.MAX_VALUE); 
+					Deadrun deadrun = new Deadrun(tripVertex.getTrip().getArrivalNode(), this.vehicleDepot, startTime, endTime, travel.get().getDistance(), false, true, tripVertex.getTrip().getTripId(), Integer.MAX_VALUE); 
 					//if(!this.deadruns.contains(deadrun))
 					{
 					    this.deadruns.add(deadrun); 

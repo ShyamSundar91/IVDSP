@@ -49,7 +49,7 @@ public class App
     public static void main( String[] args ) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = args[0];     //"/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASSydNordSmall1/";
+    	String inputPath = /*args[0];*/     "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/GoAhead/";
     	ReadInstance rd = new ReadInstance(inputPath); 
     	System.out.println("***********************************************");
     	
@@ -96,21 +96,43 @@ public class App
     		}
     	}
     	
+    	double avgDistTrip = 0.0; 
+    	double avgDurTrip = 0.0; 
+    	for(Trip trip : allTrips)
+    	{
+    		avgDistTrip = avgDistTrip + trip.getDistance(); 
+    		avgDurTrip = avgDurTrip + (double)(trip.getArrivalTime() - trip.getDepartureTime()); 
+    	}
+    	avgDistTrip = avgDistTrip/(double)allTrips.size(); 
+    	avgDurTrip = avgDurTrip/(double)allTrips.size();
+    	System.out.println("Average distance of trips in km = " + avgDistTrip);
+    	System.out.println("Average duration of trips in minutes = " + avgDurTrip);
+    	
     	VehicleGraphGeneration grpahGen = new VehicleGraphGeneration(allVehicleTypeDepots, allTrips, allVehicleTravels, allNodes); 
     	Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs = grpahGen.getVehicleGraphs(); 
     	Set<Deadrun> allDeadruns = grpahGen.getDeadruns();
     	Set<IdleTime> allIdleTimes = grpahGen.getIdleTimes(); 
     	Map<Block, Integer> blocksGenerated = new HashMap<Block, Integer>(); //grpahGen.getBlocksGenerated(); 
     	System.out.println("Number of deadheads = " + allDeadruns.size());
-    	/*for(Deadrun deadrun : allDeadruns)
+    	double avgDistDeadhead = 0.0; 
+    	double avgDurDeadhead = 0.0; 
+    	for(Deadrun deadrun : allDeadruns)
     	{
-    		System.out.println(deadrun.getDeadrunId() + "; " + deadrun.getDepartureNode().getNodeId() + "; " + deadrun.getArrivalNode().getNodeId() + "; " + deadrun.getDepartureTime() + "; " + deadrun.getArrivalTime());
-    	}*/
+    		avgDistDeadhead = avgDistDeadhead + deadrun.getDistance(); 
+    		avgDurDeadhead = avgDurDeadhead + (double)(deadrun.getArrivalTime() - deadrun.getDepartureTime()); 
+    	}
+    	avgDistDeadhead = avgDistDeadhead/(double)allDeadruns.size(); 
+    	avgDurDeadhead = avgDurDeadhead/(double)allDeadruns.size();
     	System.out.println("Number of idle time = " + allIdleTimes.size());
-    	/*for(IdleTime idleTime : allIdleTimes)
+    	double avgDurIdleTime = 0.0;
+    	for(IdleTime idleTime : allIdleTimes)
     	{
-    		System.out.println(idleTime.getNode().getNodeId() + "; " + idleTime.getDepartureTime() + "; " + idleTime.getArrivalTime());
-    	}*/
+    		avgDurIdleTime = avgDurIdleTime + (double)(idleTime.getArrivalTime() - idleTime.getDepartureTime()); 
+    	}
+    	avgDurIdleTime = avgDurIdleTime/(double)allIdleTimes.size(); 
+    	System.out.println("Average distance of deadheads in km = " + avgDistDeadhead);
+    	System.out.println("Average duration of deadheads in minutes = " + avgDurDeadhead);
+    	System.out.println("Average duration of idle times in minutes = " + avgDurIdleTime);
     	System.out.println("***********************************************");
     	
     	DriverGraphGeneration driverGraphgen = new DriverGraphGeneration(allDutyTypeDepots, allDriverTravels, allNodes, allTrips, allDeadruns, vehicleGraphs); 

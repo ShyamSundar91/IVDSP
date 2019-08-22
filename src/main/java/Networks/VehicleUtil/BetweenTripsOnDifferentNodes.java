@@ -55,7 +55,7 @@ public class BetweenTripsOnDifferentNodes
 		if(travelToTrip2.isPresent())
 		{
 			int endTimeOfTravelToTrip2Node = this.trip1.getArrivalTime() + travelToTrip2.get().getDuration(); 
-			Deadrun deadrun1 = new Deadrun(this.trip1.getArrivalNode(), this.trip2.getDepartureNode(), this.trip1.getArrivalTime(), endTimeOfTravelToTrip2Node, false, false, trip1.getTripId(), trip2.getTripId()); 
+			Deadrun deadrun1 = new Deadrun(this.trip1.getArrivalNode(), this.trip2.getDepartureNode(), this.trip1.getArrivalTime(), endTimeOfTravelToTrip2Node, travelToTrip2.get().getDistance(), false, false, trip1.getTripId(), trip2.getTripId()); 
 			//if(!this.deadruns.contains(deadrun1))
 			{
 				//this.deadruns.add(deadrun1); 
@@ -151,7 +151,7 @@ public class BetweenTripsOnDifferentNodes
 				if(travelToParkingRefueling.isPresent() && travelFromParkingRefueling.isPresent())
 				{
 					int endTimeOfTravelToParkRefuel = trip1.getArrivalTime() + (travelToParkingRefueling.get().getDuration()); 
-					Deadrun deadrun1 = new Deadrun(trip1.getArrivalNode(), bestNode, trip1.getArrivalTime(), endTimeOfTravelToParkRefuel, false, true, trip1.getTripId(), Integer.MAX_VALUE); 
+					Deadrun deadrun1 = new Deadrun(trip1.getArrivalNode(), bestNode, trip1.getArrivalTime(), endTimeOfTravelToParkRefuel, travelToParkingRefueling.get().getDistance(), false, true, trip1.getTripId(), Integer.MAX_VALUE); 
 					//if(!this.deadruns.contains(deadrun1))
 					{
 						//this.deadruns.add(deadrun1); 
@@ -168,7 +168,7 @@ public class BetweenTripsOnDifferentNodes
 						 
 					
 					int startTimeOfTravelFromParkRefuel = trip2.getDepartureTime() - (travelFromParkingRefueling.get().getDuration()); 
-					Deadrun deadrun2 = new Deadrun(bestNode, trip2.getDepartureNode(), startTimeOfTravelFromParkRefuel, trip2.getDepartureTime(), true, false, -1, trip2.getTripId()); 
+					Deadrun deadrun2 = new Deadrun(bestNode, trip2.getDepartureNode(), startTimeOfTravelFromParkRefuel, trip2.getDepartureTime(), travelFromParkingRefueling.get().getDistance(), true, false, -1, trip2.getTripId()); 
 					//if(!this.deadruns.contains(deadrun2))
 					{
 						//this.deadruns.add(deadrun2); 

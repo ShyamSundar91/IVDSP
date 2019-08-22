@@ -13,6 +13,7 @@ public class Deadrun
 	private Node arrivalNode; 
 	private int departureTime; 
 	private int arrivalTime; 
+	private double distance; 
 	private boolean pullOut; 
 	private boolean pullIn;
 	private int predecessorTripId; 
@@ -21,13 +22,14 @@ public class Deadrun
 	//private boolean afterParkRecharge; 
 	//private static int counter = 1; 
 	private String type; 
-	public Deadrun(Node departureNode, Node arrivalNode, int departureTime, int arrivalTime, boolean pullOut, boolean pullIn, int predecessorTripId, int successorTripId)
+	public Deadrun(Node departureNode, Node arrivalNode, int departureTime, int arrivalTime, double distance, boolean pullOut, boolean pullIn, int predecessorTripId, int successorTripId)
 	{
 		this.deadrunId = 0; 
 		this.departureNode = departureNode; 
 		this.arrivalNode = arrivalNode; 
 		this.departureTime = departureTime; 
 		this.arrivalTime = arrivalTime;
+		this.distance = distance; 
 		this.pullOut = pullOut;
 		this.pullIn = pullIn; 
 		this.predecessorTripId = predecessorTripId; 

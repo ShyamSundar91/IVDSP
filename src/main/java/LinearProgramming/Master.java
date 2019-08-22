@@ -118,6 +118,7 @@ public class Master
 		
 
 		this.noImprovement = 0; 
+		this.lpObjective = Double.MAX_VALUE; 
 		
 		this.cplex = new IloCplex();
 		this.cplex.addMinimize(); 
@@ -233,17 +234,18 @@ public class Master
 			if(this.cplex.solve())
 			{
 				System.out.println("LP Objective = " + this.cplex.getObjValue());
+				System.out.println("Previous LP = " + this.previousLpObjective);
 				double endtMP = System.currentTimeMillis(); 
 				this.totalTimeOfMaster = this.totalTimeOfMaster + ((endtMP-startMP)/(double)1000) ;
 				this.lpObjective = this.cplex.getObjValue(); 
 				iter.add(this.cplex.getObjValue()); 
 				
-				if(this.performedLocalSearch)
+				/*if(this.performedLocalSearch)
 				{
 					this.initialSolChanged = false; 
 					this.noImprovement = 0; 
 					this.previousLpObjective = this.lpObjective; 
-				}
+				}*/
 				
 				for(Trip trip : this.trips)
 				{
@@ -278,8 +280,8 @@ public class Master
 				
 				if(this.initialSolChanged)
 				{
-					/*double change = ((this.previousLpObjective - this.lpObjective)/this.previousLpObjective) * 100.00;
-					if(change < 0.01)
+					double change = ((this.previousLpObjective - this.lpObjective)/this.previousLpObjective) * 100.00;
+					if(change < 0.001)
 					{
 						this.noImprovement++;   
 					}
@@ -288,15 +290,24 @@ public class Master
 						this.noImprovement = 0;  
 					}
 						
-					if(this.noImprovement >= 25)
+					if(this.noImprovement >= 50)
 					{
 						if(this.selectedNeighborhoodGraph < this.neighborhoodGraphs.size())
 						{
 							selectNeighborhoodGraph(); 
 						}
-					}*/
+						else if(this.useDeadrunsAndIdleTimesInMasterProblem)
+						{
+							System.out.println("Open driver subproblem for new deadruns and idle times");
+							this.useDeadrunsAndIdleTimesInMasterProblem = false; 
+							this.initialSolChanged = false;
+							this.selectedNeighborhoodGraph++; 
+							this.noImprovement = 0;
+						}
+					}
+					
 						
-					this.previousLpObjective = this.lpObjective; 
+					//this.previousLpObjective = this.lpObjective; 
 				}
 				else
 				{
@@ -306,6 +317,7 @@ public class Master
 					}
 				}
 				
+				this.previousLpObjective = this.lpObjective;
 				
 				columnManagement(iterationNumber);
 				
@@ -353,22 +365,41 @@ public class Master
 		if(iteration != 0 && iteration%100 == 0 && this.initialSolChanged)
 		{
 			List<Block> blocksToRemove = new ArrayList<Block>(); 
-			List<Duty> dutiesToRemove = new ArrayList<Duty>(); 
-			for(Block block : this.blockVariables.keySet())
+			List<Duty> dutiesToRemove = new ArrayList<Duty>();
+			
+			if(this.blockVariables.keySet().size() > 49000)
 			{
-				if(block.getNumberOfIterationsInMP() >= 99 && block.getNumberOfTimesChosen() == 0)
+				for(Block block : this.blockVariables.keySet())
 				{
-					blocksToRemove.add(block); 
+					if(block.getNumberOfIterationsInMP() >= 99 && block.getNumberOfTimesChosen() == 0)
+					{
+						blocksToRemove.add(block); 
+						
+						if(blocksToRemove.size() > 25000)
+						{
+							break; 
+						}
+					}
 				}
 			}
 			
-			for(Duty duty : this.dutyVariables.keySet())
+			if(this.dutyVariables.keySet().size() > 49000)
 			{
-				if(duty.getNumberOfIterationsInMP() >= 99 && duty.getNumberOfTimesChosen() == 0)
+				for(Duty duty : this.dutyVariables.keySet())
 				{
-					dutiesToRemove.add(duty); 
+					if(duty.getNumberOfIterationsInMP() >= 99 && duty.getNumberOfTimesChosen() == 0)
+					{
+						dutiesToRemove.add(duty); 
+						
+						if(dutiesToRemove.size() > 25000)
+						{
+							break; 
+						}
+					}
 				}
 			}
+			
+			
 			
 			System.out.println("Number of block variables to remove = " + blocksToRemove.size());
 			System.out.println("Number of duty variabels to remove = " + dutiesToRemove.size());

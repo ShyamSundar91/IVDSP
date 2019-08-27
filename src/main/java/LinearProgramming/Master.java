@@ -273,7 +273,7 @@ public class Master
 				iter.add(totalTime); 
 				this.lowerBound.add(iter); 
 				System.out.println(totalTime);
-				if(totalTime > 86400)
+				if(totalTime > 28800)
 				{
 					status = 1; 
 				}

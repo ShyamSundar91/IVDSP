@@ -283,7 +283,7 @@ public class DriverRCSPP
 				/*
 				 * Check if max duration is dominated
 				 */
-				if(!this.useSubNetwork)
+				if(this.allowBlockChange)
 				{
 					if(this.dutyType.getMaxDuration() > 0)
 					{
@@ -300,7 +300,7 @@ public class DriverRCSPP
 				/*
 				 * Check if max duration without break is dominated
 				 */
-				if(!this.useSubNetwork)
+				if(this.allowBlockChange)
 				{
 					if(this.dutyType.getMaximumDurationWithoutBreak() > 0)
 					{

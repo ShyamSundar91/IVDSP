@@ -146,7 +146,7 @@ public class BBNodeVehicle
 					VehicleSubproblem sub = new VehicleSubproblem(iteration,this.trips, this.vehicleGraph, tripsVehicleDual, this.deadrunMultipliers, this.deadrunUpperLimit, this.idleTimeMultipliers, this.allowLineChange, false); 
 					blocksGenerated.addAll(sub.getBlocksGenerated()); 
 					double endSub = System.currentTimeMillis(); 
-					this.totalTimeSpentInSub = this.totalTimeSpentInSub + (endSub - startSub)/(double)10000; 
+					this.totalTimeSpentInSub = this.totalTimeSpentInSub + (endSub - startSub)/(double)1000; 
 					if(!blocksGenerated.isEmpty())
 					{
 						for(Block block : blocksGenerated)

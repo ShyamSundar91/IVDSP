@@ -84,6 +84,8 @@ public class BBNodeDriver
 		this.idleTimeConstraints = addIdleTimeConstraints(); 
 		addDutyVariables(this.initialAndDutiesGenerated.keySet()); 
 		 
+		this.totalTimeSpentInMaster = 0.0; 
+		this.totalTimeSpentInSub = 0.0; 
 		//solveAsMIP();
 	}
 	
@@ -170,7 +172,7 @@ public class BBNodeDriver
 					DriverSubproblem driverSubproblem = new DriverSubproblem(iteration, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimeDual, this.trips, this.deadrunsInSolution, this.idleTimesInSolution, this.allowBlockChange, this.useSubNetwork); 
 					dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
 					double endSub = System.currentTimeMillis(); 
-					this.totalTimeSpentInSub = this.totalTimeSpentInSub + (endSub - startSub)/(double)10000; 
+					this.totalTimeSpentInSub = this.totalTimeSpentInSub + (endSub - startSub)/(double)1000; 
 					
 					for(Duty duty : dutiesGenerated)
 					{
@@ -309,9 +311,13 @@ public class BBNodeDriver
 	{
 		for(Duty duty : duties)
 		{
-			Assert.assertTrue(this.trips.containsAll(duty.getTripsInDuty()));
-			Assert.assertTrue(this.deadrunsInSolution.containsAll(duty.getDeadrunsInDuty()));
-			Assert.assertTrue(this.idleTimesInSolution.containsAll(duty.getIdleTimesInDuty()));
+			if(!this.deadrunsInSolution.isEmpty())
+			{
+				Assert.assertTrue(this.trips.containsAll(duty.getTripsInDuty()));
+				Assert.assertTrue(this.deadrunsInSolution.containsAll(duty.getDeadrunsInDuty()));
+				Assert.assertTrue(this.idleTimesInSolution.containsAll(duty.getIdleTimesInDuty()));
+			}
+			
 			
 			IloColumn dutyVariable = this.cplex.column(this.cplex.getObjective(), duty.getTotalCostOfDuty()); 
 			

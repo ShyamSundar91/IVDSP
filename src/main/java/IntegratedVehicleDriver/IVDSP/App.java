@@ -49,7 +49,7 @@ public class App
     public static void main( String[] args ) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = args[0];     //"/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/GoAhead/";
+    	String inputPath = /*args[0];*/     "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/GoAhead/";
     	ReadInstance rd = new ReadInstance(inputPath); 
     	System.out.println("***********************************************");
     	
@@ -147,8 +147,8 @@ public class App
     	
     	long start = System.currentTimeMillis(); 
     	
-    	NeighborhoodGraphGeneration neigh = new NeighborhoodGraphGeneration(allDutyTypeDepots,  allDriverTravels, allNodes, allTrips, vehicleGraphs, driverGraphs); 
-    	Master master = new Master(allTrips, allVehicleTravels, neigh.getNeighborhoodGraphs()); 
+    	//NeighborhoodGraphGeneration neigh = new NeighborhoodGraphGeneration(allDutyTypeDepots,  allDriverTravels, allNodes, allTrips, vehicleGraphs, driverGraphs); 
+    	//Master master = new Master(allTrips, allVehicleTravels, neigh.getNeighborhoodGraphs()); 
     	//ColumnGeneration cg = new ColumnGeneration(allTrips, allDeadruns, allIdleTimes, vehicleGraphs, driverGraphs, /*initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj()*/ new ArrayList<Block>(), new ArrayList<Duty>(), Double.MAX_VALUE); 
     	//LocalSearch localSearch = new LocalSearch(allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj(), false, 1000); 
     	//blocksGenerated.addAll(initial.getBlocksInSolution()); 
@@ -165,6 +165,7 @@ public class App
     	
     	
     	//SequentialApproach seq = new SequentialApproach(allTrips, vehicleGraphs, driverGraphs); 
+    	IndependentApproach ind = new IndependentApproach(allTrips, vehicleGraphs, driverGraphs); 
     	long end = System.currentTimeMillis(); 
     	System.out.println("Total time = " + (double)(end-start)/1000.00);
     

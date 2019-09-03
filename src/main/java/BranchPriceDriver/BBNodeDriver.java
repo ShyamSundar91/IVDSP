@@ -53,6 +53,8 @@ public class BBNodeDriver
 	private boolean solutionInteger; 
 	private boolean earlyTermination; 
 	private boolean allowBlockChange; 
+	private boolean maxDurationDomination;
+	private boolean maxDurationWithoutBreakDomination; 
 	private int noImprovement; 
 	private boolean useSubNetwork; 
 	private double lpObjective; 
@@ -72,6 +74,8 @@ public class BBNodeDriver
 		this.allowBlockChange = false; 
 		this.noImprovement = 0; 
 		this.useSubNetwork = false; 
+		this.maxDurationDomination = false;
+		this.maxDurationWithoutBreakDomination = false; 
 		
 		this.cplex = new IloCplex(); 
 		this.cplex.addMinimize(); 
@@ -137,9 +141,10 @@ public class BBNodeDriver
 					idleTimeDual.replace(idleTime, this.cplex.getDual(this.idleTimeConstraints.get(idleTime))); 
 				}
 				
-				if(this.earlyTermination || !this.allowBlockChange)
+				if(this.earlyTermination || !this.allowBlockChange || !this.maxDurationDomination || !this.maxDurationWithoutBreakDomination)
 				{
 					double change = ((previousObj- lpObjective)/previousObj) * 100.00; 
+					System.out.println("Change = " + change);
 					if(change < 0.001)
 					{
 						noImprovement++; 
@@ -157,7 +162,19 @@ public class BBNodeDriver
 							noImprovement = 0;
 							System.out.println("Allow Block Change");
 						}
-						else
+						else if(!this.maxDurationDomination)
+						{
+							this.maxDurationDomination = true; 
+							this.noImprovement = 0; 
+							System.out.println("Max duration domination");
+						}
+						else if(!this.maxDurationWithoutBreakDomination)
+						{
+							this.maxDurationWithoutBreakDomination = true; 
+							this.noImprovement = 0; 
+							System.out.println("Max duration without break domination");
+						}
+						else if(this.earlyTermination)
 						{
 							status = 1; 
 						}
@@ -169,7 +186,7 @@ public class BBNodeDriver
 				{
 					Set<Duty> dutiesGenerated = new HashSet<Duty>(); 
 					double startSub = System.currentTimeMillis(); 
-					DriverSubproblem driverSubproblem = new DriverSubproblem(iteration, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimeDual, this.trips, this.deadrunsInSolution, this.idleTimesInSolution, this.allowBlockChange, this.useSubNetwork); 
+					DriverSubproblem driverSubproblem = new DriverSubproblem(iteration, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimeDual, this.trips, this.deadrunsInSolution, this.idleTimesInSolution, this.allowBlockChange, this.useSubNetwork, this.maxDurationDomination, this.maxDurationWithoutBreakDomination); 
 					dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
 					double endSub = System.currentTimeMillis(); 
 					this.totalTimeSpentInSub = this.totalTimeSpentInSub + (endSub - startSub)/(double)1000; 
@@ -194,6 +211,18 @@ public class BBNodeDriver
 							this.allowBlockChange = true; 
 							this.noImprovement = 0; 
 							System.out.println("Allow Block Change");
+						}
+						else if(!this.maxDurationDomination)
+						{
+							this.maxDurationDomination = true; 
+							this.noImprovement = 0; 
+							System.out.println("Max duration domination");
+						}
+						else if(!this.maxDurationWithoutBreakDomination)
+						{
+							this.maxDurationWithoutBreakDomination = true; 
+							this.noImprovement = 0; 
+							System.out.println("Max duration without break domination");
 						}
 						else
 						{

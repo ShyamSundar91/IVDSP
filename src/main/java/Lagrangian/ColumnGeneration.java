@@ -323,7 +323,7 @@ public class ColumnGeneration
 			deadrunUpperLimitDuals.put(deadrun, 0.0); 
 		}
 		
-		DriverSubproblem subProblem = new DriverSubproblem(0, this.driverGraphs, tempTripMultipliers, tempDeadrunMultipliers, deadrunUpperLimitDuals, tempIdleTimeMultipliers, new ArrayList<Trip>(), new HashSet<Deadrun>(), new HashSet<IdleTime>(), true, false); 
+		DriverSubproblem subProblem = new DriverSubproblem(0, this.driverGraphs, tempTripMultipliers, tempDeadrunMultipliers, deadrunUpperLimitDuals, tempIdleTimeMultipliers, new ArrayList<Trip>(), new HashSet<Deadrun>(), new HashSet<IdleTime>(), true, false, true, true); 
 		List<Duty> dutiesGenerated = subProblem.getDutiesGenerated();
 		if(!dutiesGenerated.isEmpty())
 		{

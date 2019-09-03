@@ -24,8 +24,8 @@ public class DriverREF
 	private int updatedDurationWithoutBreak; 
 	private int updatedNumberOfBlockChanges; 
 	private List<Trip> updatedTrips; 
-	private List<Deadrun> updatedDeadruns; 
-	private List<IdleTime> updatedIdleTimes; 
+	//private List<Deadrun> updatedDeadruns; 
+	//private List<IdleTime> updatedIdleTimes; 
 	
 	public DriverREF(DutyType dutyType, DriverREF previousREF, DriverArc extendingArc, int maxNumberOfBlockChanges)
 	{
@@ -43,8 +43,8 @@ public class DriverREF
 			updateAttendedBus(); 
 			updateReducedCost(); 
 			updateTrips(); 
-			updateDeadruns(); 
-			updateIdleTimes(); 
+			//updateDeadruns(); 
+			//updateIdleTimes(); 
 		}
 	}
 	
@@ -56,8 +56,8 @@ public class DriverREF
 		this.updatedNumberOfBlockChanges = 0; 
 		this.attendedBus = true;
 		this.updatedTrips = new ArrayList<Trip>(); 
-		this.updatedDeadruns = new ArrayList<Deadrun>(); 
-		this.updatedIdleTimes = new ArrayList<IdleTime>(); 
+		//this.updatedDeadruns = new ArrayList<Deadrun>(); 
+		//this.updatedIdleTimes = new ArrayList<IdleTime>(); 
 	}
 	
 	private void updateTrips()
@@ -73,7 +73,7 @@ public class DriverREF
 		}
 	}
 	
-	private void updateDeadruns()
+	/*private void updateDeadruns()
 	{
 		this.updatedDeadruns = new ArrayList<Deadrun>(); 
 		if(this.previousREF != null)
@@ -97,7 +97,7 @@ public class DriverREF
 				this.updatedIdleTimes.add(this.extendingArc.getIdleTimeOnArc()); 
 			}
 		}
-	}
+	}*/
 	
 	private void updateAttendedBus()
 	{

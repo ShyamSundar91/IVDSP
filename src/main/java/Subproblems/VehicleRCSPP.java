@@ -255,19 +255,19 @@ public class VehicleRCSPP
 	{
 		List<LabelVehicle> labelsAtSink = new ArrayList<LabelVehicle>(this.sinkVertex.getLabels()); 
 		//System.out.println("Final labels = " + labelsAtSink.size());
-		if(labelsAtSink.size() > 250 && !this.generateAllVariables)
+		if(labelsAtSink.size() > 500 && !this.generateAllVariables)
 		{
-			//if(labelsAtSink.size() > 1000 && this.useSubNetwork)
+			//if(!this.allowedLineChange)
 			{
-				//Collections.sort(labelsAtSink);
-				//labelsAtSink = labelsAtSink.subList(0, 1000);
+				Collections.sort(labelsAtSink);
+				labelsAtSink = labelsAtSink.subList(0, 500);
 				//labelsAtSink = selectComplementaryColumns(labelsAtSink);
 			}
-			//else
+			/*else
 			{
 				Collections.sort(labelsAtSink);
 				labelsAtSink = labelsAtSink.subList(0, 250);
-			}
+			}*/
 			
 		}
 		
@@ -392,7 +392,7 @@ public class VehicleRCSPP
 				tripsInLabel.addAll(label.getUpdatedResources().getUpdatedTrips()); 
 				tripsInLabel.retainAll(tripsCovered); 
 				
-				if(tripsInLabel.size() <= 0)
+				if(tripsInLabel.size() <= 1)
 				{
 					selectedLabels.add(label); 
 					tripsCovered.addAll(label.getUpdatedResources().getUpdatedTrips()); 

@@ -602,7 +602,7 @@ public class IntegratedMasterProblem
 		int beforeDeadrunSize = deadrunsGenerated.size(); 
 		int beforeIdleTimeSize = idleTimesGenerated.size(); 
 		double startDriverSub = System.currentTimeMillis(); 
-		DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, this.trips, this.deadruns, this.idleTimes, this.allowBlockChange, true); 
+		DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, this.trips, this.deadruns, this.idleTimes, this.allowBlockChange, true, true, true); 
 		dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
 		double endDriverSub = System.currentTimeMillis(); 
 		this.totalTimeOfDriverSub = this.totalTimeOfDriverSub + (endDriverSub - startDriverSub)/(double)1000; 

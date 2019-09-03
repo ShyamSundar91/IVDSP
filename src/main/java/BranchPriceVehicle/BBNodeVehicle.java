@@ -129,7 +129,7 @@ public class BBNodeVehicle
 							noImprovement = 0; 
 							System.out.println("Allow Line Change");
 						}
-						else
+						else if(this.earlyTermination)
 						{
 							status = 1; 
 						}

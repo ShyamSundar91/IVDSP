@@ -86,19 +86,19 @@ public class InitialSolutionController
 	{
 		System.out.println("Number of lines = " + this.lines.size());
 		
-		//for(Integer lineNumber : this.lines)
+		for(Integer lineNumber : this.lines)
 		{
 			long start = System.currentTimeMillis(); 
 			
-			/*List<Trip> tripsInLine = this.allTrips.stream().filter(t -> t.getLineNumber() == lineNumber.intValue()).collect(Collectors.toList()); 
+			List<Trip> tripsInLine = this.allTrips.stream().filter(t -> t.getLineNumber() == lineNumber.intValue()).collect(Collectors.toList()); 
 			System.out.println("***************************************************");
-			System.out.println("Line number = " + lineNumber + ", number of trips = " + tripsInLine.size());*/
+			System.out.println("Line number = " + lineNumber + ", number of trips = " + tripsInLine.size());
 			
-			GraphCopy graphCopy = new GraphCopy(this.vehicleGraphs, this.driverGraphs, /*tripsInLine, tripsInLine*/ this.allTrips, this.allTrips, new HashSet<Deadrun>(), new HashSet<IdleTime>());  
+			GraphCopy graphCopy = new GraphCopy(this.vehicleGraphs, this.driverGraphs, tripsInLine, tripsInLine,/* this.allTrips, this.allTrips,*/ new HashSet<Deadrun>(), new HashSet<IdleTime>());  
 			Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphCopy = graphCopy.getVehicleGraphsCopy(); 
 			Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphCopy = graphCopy.getDriverGraphsCopy(); 
 			
-			SequentialApproach seqAp = new SequentialApproach(this.allTrips /*tripsInLine*/, vehicleGraphCopy, driverGraphCopy); 
+			SequentialApproach seqAp = new SequentialApproach(/*this.allTrips*/ tripsInLine, vehicleGraphCopy, driverGraphCopy); 
 			this.blocksInSolution.addAll(seqAp.getBlocksInSolution()); 
 			this.dutiesInSolution.addAll(seqAp.getDutiesInSolution()); 
 			this.initialSolutionObj = this.initialSolutionObj + seqAp.getTotalObjective(); 

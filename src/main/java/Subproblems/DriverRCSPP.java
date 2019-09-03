@@ -44,8 +44,10 @@ public class DriverRCSPP
 	private boolean allowBlockChange;
 	private boolean useSubNetwork; 
 	private int allowedBlockChanges; 
+	private boolean maxDurationDomination;
+	private boolean maxDurationWithoutBreakDomination; 
 	
-	public DriverRCSPP(DutyType dutyType, DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph,  Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, List<Trip> tripsInSolution, Set<Deadrun> deadrunsInSolutions, Set<IdleTime> idleTimesInSolution,  boolean allowBlockChange, boolean useSubNetwork)
+	public DriverRCSPP(DutyType dutyType, DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph,  Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, List<Trip> tripsInSolution, Set<Deadrun> deadrunsInSolutions, Set<IdleTime> idleTimesInSolution,  boolean allowBlockChange, boolean useSubNetwork, boolean maxDurationDomination, boolean maxDurationWithoutBreakDomination)
 	{
 		this.dutyType = dutyType; 
 		this.driverGraph = driverGraph; 
@@ -74,11 +76,16 @@ public class DriverRCSPP
 			this.allowedBlockChanges = this.dutyType.getMaximumNumberOfBlockChanges(); 
 		}
 		this.useSubNetwork = useSubNetwork; 
+		this.maxDurationDomination = maxDurationDomination;
+		this.maxDurationWithoutBreakDomination = maxDurationWithoutBreakDomination; 
 		
 		
 		initialization(); 
 		
+		double startTime = System.currentTimeMillis(); 
 		algorithm(); 
+		double endTime = System.currentTimeMillis(); 
+		System.out.println("Toalt sub time = " + (endTime-startTime)/1000.00);
 	}
 	
 	private void initialization()
@@ -88,6 +95,7 @@ public class DriverRCSPP
 		this.sourceVertex.getLabels().add(initialLabel); 
 		this.queue.add(this.sourceVertex); 
 	}
+	
 	
 	private void algorithm()
 	{
@@ -113,13 +121,17 @@ public class DriverRCSPP
 						outgoingArcs = selected; 
 					}*/					
 					
+					
 					for(DriverArc outgoingArc : outgoingArcs)
 					{
+						
 						DriverVertex successorVertex = outgoingArc.getSuccessorVertex(); 
 						
 						DriverREF newREF = new DriverREF(this.dutyType, selectedLabel.getUpdatedResources(), outgoingArc, this.allowedBlockChanges); 
+						
 						if(newREF.isValid())
 						{
+							
 							if(successorVertex.getCurrentTime() == Integer.MAX_VALUE && (newREF.getUpdatedReducedCost() <= -0.01  || this.generateAllVariables))
 							{
 								LabelDriver newLabel = new LabelDriver(selectedLabel, selectedVertex, outgoingArc, newREF); 
@@ -127,29 +139,38 @@ public class DriverRCSPP
 								{
 									successorVertex.getLabels().add(newLabel);
 								}
+								
 							}
 							else if(successorVertex.getCurrentTime() != Integer.MAX_VALUE)
 							{
+								boolean newLabelAdded = false; 
 								LabelDriver newLabel = new LabelDriver(selectedLabel, selectedVertex, outgoingArc, newREF); 
 								if(this.generateAllVariables)
 								{
 									successorVertex.getLabels().add(newLabel); 
+									newLabelAdded = true;
 								}
 								else
 								{
-									checkDomination(successorVertex, newLabel); 
+									newLabelAdded = checkDomination(successorVertex, newLabel); 
 								}
 								
-								
-								if(!this.queue.contains(successorVertex))
+								if(newLabelAdded)
 								{
-									this.queue.add(successorVertex); 
+									if(!this.queue.contains(successorVertex))
+									{
+										this.queue.add(successorVertex); 
+									}
 								}
+								
 							}
+							
 						}
+						
 					}
+					selectedLabel.labelDriverVisited();
 				}
-				selectedLabel.labelDriverVisited();
+				
 			}
 			
 			this.queue.remove(selectedVertex); 
@@ -254,8 +275,9 @@ public class DriverRCSPP
 		return selectedArcs; 
 	}
 	
-	private void checkDomination(DriverVertex driverVertex, LabelDriver newLabel)
+	private boolean checkDomination(DriverVertex driverVertex, LabelDriver newLabel)
 	{
+		boolean newLabelAdded = false; 
 		List<LabelDriver> existingLabels = driverVertex.getLabels(); 
 		List<LabelDriver> existingLabelsToBeRemoved = new ArrayList<LabelDriver>(); 
 		DriverREF newREF = newLabel.getUpdatedResources(); 
@@ -283,7 +305,7 @@ public class DriverRCSPP
 				/*
 				 * Check if max duration is dominated
 				 */
-				if(this.allowBlockChange)
+				if(this.maxDurationDomination)
 				{
 					if(this.dutyType.getMaxDuration() > 0)
 					{
@@ -300,7 +322,7 @@ public class DriverRCSPP
 				/*
 				 * Check if max duration without break is dominated
 				 */
-				if(this.allowBlockChange)
+				if(this.maxDurationWithoutBreakDomination)
 				{
 					if(this.dutyType.getMaximumDurationWithoutBreak() > 0)
 					{
@@ -403,6 +425,7 @@ public class DriverRCSPP
 			if(!notToAddLabel)
 			{
 				driverVertex.getLabels().add(newLabel); 
+				newLabelAdded = true;
 			}
 			
 			for(LabelDriver removeLabel : existingLabelsToBeRemoved)
@@ -413,27 +436,31 @@ public class DriverRCSPP
 		else
 		{
 			driverVertex.getLabels().add(newLabel); 
+			newLabelAdded = true;
 		}
+		
+		return newLabelAdded; 
 	}
 	
 	private void retrievePaths()
 	{
 		List<LabelDriver> labelsAtSink = new ArrayList<LabelDriver>(this.sinkVertex.getLabels()); 
 		
-		if(labelsAtSink.size() > 250 && !this.generateAllVariables)
+		if(labelsAtSink.size() > 500 && !this.generateAllVariables)
 		{
-			/*if(labelsAtSink.size() > 1000 /*&& this.useSubNetwork)
+			if(!this.allowBlockChange)
 			{
 				//Collections.sort(labelsAtSink);
 				//labelsAtSink = labelsAtSink.subList(0, 1000);
 				labelsAtSink = selectComplementaryColumns(labelsAtSink);
 			}
-			else*/
+			else
 			{
 				Collections.sort(labelsAtSink);
-				labelsAtSink = labelsAtSink.subList(0, 250);
+				labelsAtSink = labelsAtSink.subList(0, 500);
 			}
 		}
+	
 		
 		List<DriverArc> driverArcs = new ArrayList<DriverArc>();
 		
@@ -512,9 +539,9 @@ public class DriverRCSPP
 				Assert.assertTrue((trips.isEmpty() && !deadruns.isEmpty()) || (!trips.isEmpty() && deadruns.isEmpty()) || (!trips.isEmpty() && !deadruns.isEmpty()));
 				Assert.assertTrue(duty.getTotalDuration() == finalLabel.getUpdatedResources().getUpdatedTotalDuration());
 				Assert.assertTrue(Math.abs(duty.getTotalCostOfDuty()-totalCost) <= 1e-6);
-				Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedTrips().containsAll(duty.getTripsInDuty()) && duty.getTripsInDuty().containsAll(finalLabel.getUpdatedResources().getUpdatedTrips()));
-				Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedDeadruns().containsAll(duty.getDeadrunsInDuty()) && duty.getDeadrunsInDuty().containsAll(finalLabel.getUpdatedResources().getUpdatedDeadruns()));
-				Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedIdleTimes().containsAll(duty.getIdleTimesInDuty()) && duty.getIdleTimesInDuty().containsAll(finalLabel.getUpdatedResources().getUpdatedIdleTimes()));
+				//Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedTrips().containsAll(duty.getTripsInDuty()) && duty.getTripsInDuty().containsAll(finalLabel.getUpdatedResources().getUpdatedTrips()));
+				//Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedDeadruns().containsAll(duty.getDeadrunsInDuty()) && duty.getDeadrunsInDuty().containsAll(finalLabel.getUpdatedResources().getUpdatedDeadruns()));
+				//Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedIdleTimes().containsAll(duty.getIdleTimesInDuty()) && duty.getIdleTimesInDuty().containsAll(finalLabel.getUpdatedResources().getUpdatedIdleTimes()));
 				validateDuty(duty);
 				
 				if(!this.generateAllVariables)
@@ -572,7 +599,7 @@ public class DriverRCSPP
 				if(!tripsInLabel.isEmpty())
 				{
 					tripsInLabel.retainAll(tripsCovered); 
-					if(tripsInLabel.size() <= 0)
+					if(tripsInLabel.size() <= 1)
 					{
 						selectedLabels.add(label); 
 						tripsCovered.addAll(label.getUpdatedResources().getUpdatedTrips()); 

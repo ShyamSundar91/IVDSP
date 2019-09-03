@@ -28,12 +28,14 @@ public class DriverSubproblem
 	private Set<Deadrun> deadrunsInSolution; 
 	private Set<IdleTime> idleTimesInSolution; 
 	private boolean allowBlockChange;
-	private boolean useSubNetwork; 
+	private boolean useSubNetwork;
+	private boolean maxDurationDomination;
+	private boolean maxDurationWithoutBreakDomination; 
 	@Getter
 	private List<Duty> dutiesGenerated; 
 
 	public DriverSubproblem(int globalIterationNumber, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes,
-			List<Trip> tripsInSolution, Set<Deadrun> deadrunsInSolution, Set<IdleTime> idleTimesInSolution, boolean allowBlockChange, boolean useSubNetwork)
+			List<Trip> tripsInSolution, Set<Deadrun> deadrunsInSolution, Set<IdleTime> idleTimesInSolution, boolean allowBlockChange, boolean useSubNetwork, boolean maxDurationDomination, boolean maxDurationWithoutBreakDomination)
 	{
 		this.globalIterationNumber = globalIterationNumber;  
 		this.driverGraphs = driverGraphs; 
@@ -46,6 +48,8 @@ public class DriverSubproblem
 		this.idleTimesInSolution = idleTimesInSolution;  
 		this.allowBlockChange = allowBlockChange;
 		this.useSubNetwork = useSubNetwork; 
+		this.maxDurationDomination = maxDurationDomination;
+		this.maxDurationWithoutBreakDomination = maxDurationWithoutBreakDomination; 
 		
 		chooseSubproblem(); 
 	}
@@ -96,7 +100,7 @@ public class DriverSubproblem
 			vertex.getLabels().clear();
 		}
 		
-		DriverRCSPP rcspp = new DriverRCSPP(chosenSubproblem.getDutyType(), this.driverGraphs.get(chosenSubproblem), this.dualValuesOfTripIDs, this.dualValuesOfDeadrunsLowerLimit, this.dualValuesOfDeadrunsUpperLimit, this.dualValuesOfIdleTimes, this.tripsInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.allowBlockChange, this.useSubNetwork); 
+		DriverRCSPP rcspp = new DriverRCSPP(chosenSubproblem.getDutyType(), this.driverGraphs.get(chosenSubproblem), this.dualValuesOfTripIDs, this.dualValuesOfDeadrunsLowerLimit, this.dualValuesOfDeadrunsUpperLimit, this.dualValuesOfIdleTimes, this.tripsInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.allowBlockChange, this.useSubNetwork, this.maxDurationDomination, this.maxDurationWithoutBreakDomination); 
 		this.dutiesGenerated = rcspp.getDutiesGenerated(); 
 		System.out.println("Number of duties generated " + this.dutiesGenerated.size());
 	}

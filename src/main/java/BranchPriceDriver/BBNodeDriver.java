@@ -101,7 +101,7 @@ public class BBNodeDriver
 		double previousObj = Double.MAX_VALUE; 
 		
 		this.cplex.setOut(null);
-		this.cplex.setParam(IloCplex.IntParam.ParallelMode, 1);
+		this.cplex.setParam(IloCplex.Param.Parallel, 1);
 		
 		while(status != 1)
 		{

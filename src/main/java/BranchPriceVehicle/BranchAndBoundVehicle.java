@@ -116,15 +116,18 @@ public class BranchAndBoundVehicle
 			}
 		}*/
 		
-		
-		double nodeLp = 0; 
-		for(Integer node : this.lpObjectivesAtEachNode.keySet())
+		if(!this.earlyTermination)
 		{
-			System.out.println(node + "; " + this.lpObjectivesAtEachNode.get(node));
-			double val1 = Math.round(this.lpObjectivesAtEachNode.get(node).get(0) * 100.0) / 100.0; 
-			Assert.assertTrue(val1 - nodeLp >= 0);
-			nodeLp = val1; 
+			double nodeLp = 0; 
+			for(Integer node : this.lpObjectivesAtEachNode.keySet())
+			{
+				System.out.println(node + "; " + this.lpObjectivesAtEachNode.get(node));
+				double val1 = Math.round(this.lpObjectivesAtEachNode.get(node).get(0) * 100.0) / 100.0; 
+				Assert.assertTrue(val1 - nodeLp >= 0);
+				nodeLp = val1; 
+			}
 		}
+		
 	}
 	
 	

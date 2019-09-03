@@ -37,8 +37,7 @@ public class VehicleRCSPP
 	
 	private boolean generateAllVariables;
 	private boolean allowedLineChange; 
-	private boolean useSubNetwork; 
-	public VehicleRCSPP(VehicleType vehicleType, List<Trip> trips, DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs, boolean allowedLineChange, boolean useSubNetwork)
+	public VehicleRCSPP(VehicleType vehicleType, List<Trip> trips, DefaultDirectedGraph<VehicleVertex, VehicleArc> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs, boolean allowedLineChange)
 	{
 		this.vehicleType = vehicleType; 
 		this.vehicleGraph = vehicleGraph;  
@@ -57,7 +56,6 @@ public class VehicleRCSPP
 		
 		this.generateAllVariables = false; 
 		this.allowedLineChange = allowedLineChange; 
-		this.useSubNetwork = useSubNetwork; 
 		
 		initialization(); 
 		
@@ -184,19 +182,16 @@ public class VehicleRCSPP
 				/*
 				 * Check if max distance without recharging is dominated
 				 */
-				if(!this.useSubNetwork)
+			
+				if(this.vehicleType.getMaximumDistanceWithoutRecharging() > 0)
 				{
-					if(this.vehicleType.getMaximumDistanceWithoutRecharging() > 0)
+					boolean dominatedMaxDistanceWithoutRefueling = false; 
+					if(newREF.getUpdatedDistanceWithoutRecharging() >= existingREF.getUpdatedDistanceWithoutRecharging())
 					{
-						boolean dominatedMaxDistanceWithoutRefueling = false; 
-						if(newREF.getUpdatedDistanceWithoutRecharging() >= existingREF.getUpdatedDistanceWithoutRecharging())
-						{
-							dominatedMaxDistanceWithoutRefueling = true;
-						}
-						dominatingDecisions.add(dominatedMaxDistanceWithoutRefueling); 
+						dominatedMaxDistanceWithoutRefueling = true;
 					}
+					dominatingDecisions.add(dominatedMaxDistanceWithoutRefueling); 
 				}
-				
 				
 				
 				boolean dominated = true; 

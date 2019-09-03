@@ -28,8 +28,7 @@ public class VehicleSubproblem
 	private List<Block> blocksGenerated; 
 
 	private boolean allowLineChange; 
-	private boolean useSubNetwork; 
-	public VehicleSubproblem(int globalIterationNumber, List<Trip> tripsToGenerateVariables, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, boolean allowLineChange, boolean useSubNetwork)
+	public VehicleSubproblem(int globalIterationNumber, List<Trip> tripsToGenerateVariables, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraph, Map<Trip, Double> dualValuesOfTripIDs, Map<Deadrun, Double> dualValuesOfDeadrunsLowerLimit, Map<Deadrun, Double> dualValuesOfDeadrunsUpperLimit, Map<IdleTime, Double> dualValuesOfIdleTimes, boolean allowLineChange)
 	{
 		this.globalIterationNumber = globalIterationNumber;  
 		this.tripsToGenerateVariables = tripsToGenerateVariables; 
@@ -39,7 +38,6 @@ public class VehicleSubproblem
 		this.dualValuesOfDeadrunsUpperLimit = dualValuesOfDeadrunsUpperLimit; 
 		this.dualValuesOfIdleTimes = dualValuesOfIdleTimes;  
 		this.allowLineChange = allowLineChange; 
-		this.useSubNetwork = useSubNetwork; 
 		
 		chooseSubproblem(); 
 	}
@@ -94,7 +92,7 @@ public class VehicleSubproblem
 			vertex.getLabels().clear();
 		}
 		
-		VehicleRCSPP rcspp = new VehicleRCSPP(chosenSubproblem.getVehicleType(), this.tripsToGenerateVariables, this.vehicleGraphs.get(chosenSubproblem), dualValuesOfTripIDs, this.allowLineChange, this.useSubNetwork); 
+		VehicleRCSPP rcspp = new VehicleRCSPP(chosenSubproblem.getVehicleType(), this.tripsToGenerateVariables, this.vehicleGraphs.get(chosenSubproblem), dualValuesOfTripIDs, this.allowLineChange); 
 		this.blocksGenerated = rcspp.getBlocksGenerated(); 
 		System.out.println("Number of blocks generated " + this.blocksGenerated.size());
 	}

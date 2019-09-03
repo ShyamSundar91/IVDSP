@@ -35,12 +35,7 @@ public class BBNodeIntegrated
 	private Map<Duty, Double> fractionalValuesOfDuties; 
 	private boolean solutionInteger;
 	private double lpObjective; 
-	private boolean earlyTermination; 
-	
-	private Map<Trip, Double> tripVehicleDuals; 
-	private Map<Trip, Double> tripDriverDuals; 
-	private Map<Deadrun, Double> deadrunDuals;
-	private Map<IdleTime, Double> idleTimeDuals; 
+	private boolean earlyTermination;  
 	
 	public BBNodeIntegrated(Map<Block, Integer> initialBlocksAndGenerated, Map<Duty, Integer> initialDutiesAndGenerated, List<Trip> trips, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, boolean earlyTermination)
 	{
@@ -61,11 +56,6 @@ public class BBNodeIntegrated
 		this.fractionalValuesOfDuties = imp.getFractionalValuesOfDuties(); 
 		this.solutionInteger = imp.isSolutionInteger(); 
 		this.lpObjective = imp.getLpObjective(); 
-		
-		this.tripVehicleDuals = imp.getTripVehicleDuals(); 
-		this.tripDriverDuals = imp.getTripDriverDuals(); 
-		this.deadrunDuals = imp.getDeadrunDuals(); 
-		this.idleTimeDuals = imp.getIdleTimeDuals(); 
 	}
 
 }

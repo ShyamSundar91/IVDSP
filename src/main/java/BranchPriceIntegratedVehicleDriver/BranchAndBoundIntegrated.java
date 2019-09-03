@@ -90,13 +90,6 @@ public class BranchAndBoundIntegrated
 			System.out.println("Node number = " + nodeNo);
 			BBNodeIntegrated currentNode = this.nodes.get(0); 
 			currentNode.solve();
-			if(nodeNo == 0)
-			{
-				this.tripVehicleDuals = currentNode.getTripVehicleDuals(); 
-				this.tripDriverDuals = currentNode.getTripDriverDuals(); 
-				this.deadrunDuals = currentNode.getDeadrunDuals(); 
-				this.idleTimeDuals = currentNode.getIdleTimeDuals(); 
-			}
 			this.lpObjectivesAtEachNode.put(nodeNo, currentNode.getLpObjective()); 
 			if(!currentNode.isSolutionInteger())
 			{

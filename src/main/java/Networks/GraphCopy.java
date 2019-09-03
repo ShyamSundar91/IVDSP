@@ -49,7 +49,7 @@ public class GraphCopy
 		removeDriverArcsBasedOnTrips(this.driverGraphsCopy, this.uncoveredTripsOfDriver, this.deadrunsInSolution, this.idleTimesInSolution); 
 	}
 	
-	public void restrictGraphSize(Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphsCopy, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy)
+	/*public void restrictGraphSize(Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphsCopy, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphsCopy)
 	{
 		for(VehicleTypeDepot vehicleTypeDepot : vehicleGraphsCopy.keySet())
 		{
@@ -68,7 +68,7 @@ public class GraphCopy
 							arcsToRemove.add(arc); 
 						}
 					}
-					else*/ if(arc.getIdleTimeOnArc().getArrivalTime() - arc.getIdleTimeOnArc().getDepartureTime() > 36)
+					else if(arc.getIdleTimeOnArc().getArrivalTime() - arc.getIdleTimeOnArc().getDepartureTime() > 36)
 					{
 						arcsToRemove.add(arc);
 					}
@@ -116,7 +116,7 @@ public class GraphCopy
 					idleTimesInRestrictedGraph.add(arc.getIdleTimeOnArc()); 
 				}
 			}
-		}*/
+		}
 		
 		
 		int before = driverGraphsCopy.get(driverGraphsCopy.keySet().iterator().next()).edgeSet().size(); 
@@ -129,8 +129,8 @@ public class GraphCopy
 		
 		int after = driverGraphsCopy.get(driverGraphsCopy.keySet().iterator().next()).edgeSet().size(); 
 		System.out.println("After = " + after);
-		Assert.assertTrue(after < before);*/
-	}
+		Assert.assertTrue(after < before);
+	}*/
 	
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> createCopyOfVehicleGraph()
 	{

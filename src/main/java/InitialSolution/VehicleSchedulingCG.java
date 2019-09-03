@@ -96,7 +96,7 @@ public class VehicleSchedulingCG
 				
 				List<Block> blocksGenerated = new ArrayList<Block>(); 
 				
-				VehicleSubproblem sub = new VehicleSubproblem(iter,this.tripsInLine, this.vehicleGraph, tripsVehicleDual, new HashMap<Deadrun, Double>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), true, false); 
+				VehicleSubproblem sub = new VehicleSubproblem(iter,this.tripsInLine, this.vehicleGraph, tripsVehicleDual, new HashMap<Deadrun, Double>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), true); 
 				blocksGenerated.addAll(sub.getBlocksGenerated()); 
 				
 				if(!blocksGenerated.isEmpty())

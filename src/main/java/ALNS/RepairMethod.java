@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
+import org.junit.Assert;
 
 import BranchPriceDriver.BranchAndBoundDriver;
 import BranchPriceIntegratedVehicleDriver.BranchAndBoundIntegrated;
@@ -245,7 +246,7 @@ public class RepairMethod
 		Map<Duty, Integer> initialDuties = new HashMap<Duty, Integer>();
 		for(Duty duty : this.intermediateDutySolution)
 		{
-			initialDuties.put(duty, 0); 	
+			initialDuties.put(duty, 1); 	
 			this.deadrunInSolution.addAll(duty.getDeadrunsInDuty()); 
 			this.idleTimeInSolution.addAll(duty.getIdleTimesInDuty()); 
 		}
@@ -265,21 +266,10 @@ public class RepairMethod
 	
 	private void createGraphsCopy()
 	{
-		if(this.uncoveredTripsOfDriver.isEmpty())
-		{
-			this.uncoveredTripsOfDriver.addAll(this.allTrips); 
-		}
+		Assert.assertTrue(!this.uncoveredTripsOfDriver.isEmpty());
 		GraphCopy graphCopy = new GraphCopy(this.vehicleGraphs, this.driverGraphs, this.uncoveredTripsOfVehicle, this.uncoveredTripsOfDriver, this.deadrunInSolution, this.idleTimeInSolution);
 		this.vehicleGraphsCopy = graphCopy.getVehicleGraphsCopy(); 
 		this.driverGraphsCopy = graphCopy.getDriverGraphsCopy(); 
-		
-		/*if(this.chosenDestroyMethod > 1)
-		{
-			int before = driverGraphsCopy.get(driverGraphsCopy.keySet().iterator().next()).edgeSet().size(); 
-			System.out.println("Before 1 = " + before);
-			
-			graphCopy.restrictGraphSize(vehicleGraphsCopy, driverGraphsCopy);
-		}*/
 	}
 	
 

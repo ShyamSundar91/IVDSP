@@ -205,9 +205,9 @@ public class Master
 		long start = System.currentTimeMillis(); 
 		this.cplex.setOut(null);
 		//this.cplex.setParam(IloCplex.BooleanParam.PreInd, false);
-		this.cplex.setParam(IloCplex.IntParam.Parallel, 1);
+		this.cplex.setParam(IloCplex.Param.Parallel, 1);
 		this.cplex.setParam(IloCplex.Param.RootAlgorithm, IloCplex.Algorithm.Barrier);
-		this.cplex.setParam(IloCplex.IntParam.AdvInd, 2);
+		//this.cplex.setParam(IloCplex.IntParam.AdvInd, 2);
 		while(status != 1)
 		{
 			System.out.println("***************************************************");
@@ -641,7 +641,7 @@ public class Master
 		else*/
 		{
 			double startVehicleSub = System.currentTimeMillis(); 
-			VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.trips, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, true, false); 
+			VehicleSubproblem vehicleSubproblem = new VehicleSubproblem(iterationNumber, this.trips, this.vehicleGraphs, tripsVehicleDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, true); 
 			blocksGenerated.addAll(vehicleSubproblem.getBlocksGenerated()); 
 			double endVehicleSub = System.currentTimeMillis(); 
 			this.totalTimeOfVehicleSub = this.totalTimeOfVehicleSub + (endVehicleSub - startVehicleSub)/(double)1000; 

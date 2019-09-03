@@ -237,24 +237,42 @@ public class DestroyMethod
 		
 		Set<Deadrun> deadrunsInRemovedBlocks = new HashSet<Deadrun>(); 
 		Set<IdleTime> idleTimesInRemovedBlocks = new HashSet<IdleTime>(); 
+		List<Trip> tripsInRemovedBlocks = new ArrayList<Trip>(); 
+		
 		for(Block block : blocksToBeRemoved)
 		{
 			deadrunsInRemovedBlocks.addAll(block.getDeadrunsInBlock()); 
 			idleTimesInRemovedBlocks.addAll(block.getIdleTimesInBlock()); 
+			tripsInRemovedBlocks.addAll(block.getTripsInBlock()); 
 		}
 		
 		for(Duty duty : this.dutiesInSolution)
 		{
 			boolean added = false; 
-			for(Deadrun deadrun : duty.getDeadrunsInDuty())
+			
+			for(Trip trip : duty.getTripsInDuty())
 			{
-				if(deadrunsInRemovedBlocks.contains(deadrun))
+				if(tripsInRemovedBlocks.contains(trip))
 				{
 					dutiesToBeRemoved.add(duty);
 					added = true; 
 					break; 
 				}
 			}
+			
+			if(!added)
+			{
+				for(Deadrun deadrun : duty.getDeadrunsInDuty())
+				{
+					if(deadrunsInRemovedBlocks.contains(deadrun))
+					{
+						dutiesToBeRemoved.add(duty);
+						added = true; 
+						break; 
+					}
+				}
+			}
+			
 			
 			if(!added)
 			{

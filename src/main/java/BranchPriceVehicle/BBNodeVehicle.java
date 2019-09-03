@@ -84,7 +84,7 @@ public class BBNodeVehicle
 		int iteration = 0; 
 		
 		this.cplex.setOut(null);
-		this.cplex.setParam(IloCplex.IntParam.ParallelMode, 1);
+		this.cplex.setParam(IloCplex.Param.Parallel, 1);
 		double previousObj = Double.MAX_VALUE;
 		 
 		while(status != 1)
@@ -143,7 +143,7 @@ public class BBNodeVehicle
 					Set<Block> blocksGenerated = new HashSet<Block>(); 
 					
 					double startSub = System.currentTimeMillis(); 
-					VehicleSubproblem sub = new VehicleSubproblem(iteration,this.trips, this.vehicleGraph, tripsVehicleDual, this.deadrunMultipliers, this.deadrunUpperLimit, this.idleTimeMultipliers, this.allowLineChange, false); 
+					VehicleSubproblem sub = new VehicleSubproblem(iteration,this.trips, this.vehicleGraph, tripsVehicleDual, this.deadrunMultipliers, this.deadrunUpperLimit, this.idleTimeMultipliers, this.allowLineChange); 
 					blocksGenerated.addAll(sub.getBlocksGenerated()); 
 					double endSub = System.currentTimeMillis(); 
 					this.totalTimeSpentInSub = this.totalTimeSpentInSub + (endSub - startSub)/(double)1000; 

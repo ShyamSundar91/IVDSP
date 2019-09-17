@@ -40,13 +40,13 @@ public class Duty implements Comparable<Duty>
 		int totalDrivingDuration = 0; 
 		for(Trip trip : this.tripsInDuty)
 		{
-			totalDrivingDuration = totalDrivingDuration + (trip.getArrivalTime() - trip.getArrivalTime()); 
+			totalDrivingDuration = totalDrivingDuration + (trip.getArrivalTime() - trip.getDepartureTime()); 
 		}
 		
-		for(Deadrun deadrun : this.deadrunsInDuty)
+		/*for(Deadrun deadrun : this.deadrunsInDuty)
 		{
 			totalDrivingDuration = totalDrivingDuration + (deadrun.getArrivalTime() - deadrun.getDepartureTime()); 
-		}
+		}*/
 		
 		this.deltaOfDuty = (this.totalCostOfDuty/(double)(totalDrivingDuration)) ; 
 		this.startTime = this.dutyActivities.get(0).getDepartureTime(); 

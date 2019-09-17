@@ -102,6 +102,7 @@ public class BBNodeDriver
 		
 		this.cplex.setOut(null);
 		this.cplex.setParam(IloCplex.Param.Parallel, 1);
+		this.cplex.setParam(IloCplex.Param.Threads, 4);
 		
 		while(status != 1)
 		{

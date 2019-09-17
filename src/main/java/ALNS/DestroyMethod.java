@@ -53,18 +53,23 @@ public class DestroyMethod
 	private List<Trip> uncoveredTripsOfVehicle; 
 	private List<Trip> uncoveredTripsOfDriver; 
 	private Random rnd; 
-	private double degreeOfDestruction; 
+	private double degreeOfDutyDestruction;
+	private double degreeOfSequentialDestruction; 
+	private double degreeOfIntegratedDestruction; 
 	private boolean initalSolutionLocalSearch; 
+	private int noImprovement; 
 	
 	public DestroyMethod(int iteration, int chosenDestroyMethod, List<Trip> trips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, 
-			Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> blocksInSolution, List<Duty> dutiesInSolution, boolean initalSolutionLocalSearch)
+			Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> blocksInSolution, List<Duty> dutiesInSolution, boolean initalSolutionLocalSearch, double degreeOfDutyDestruction, double degreeOfSequentialDestruction, double degreeOfIntegratedDestruction, int noImprovement)
 	{
 		this.trips = trips; 
 		this.vehicleGraphs = vehicleGraphs; 
 		this.driverGraphs = driverGraphs; 
 		this.deadrunMultipliers = deadrunMultipliers; 
 		this.idleTimeMultipliers = idleTimeMultipliers; 
-
+		this.degreeOfDutyDestruction = degreeOfDutyDestruction; 
+		this.degreeOfSequentialDestruction = degreeOfSequentialDestruction; 
+		this.degreeOfIntegratedDestruction = degreeOfIntegratedDestruction; 
 		
 		this.blocksInSolution = new ArrayList<Block>(blocksInSolution); 
 		this.dutiesInSolution = new ArrayList<Duty>(dutiesInSolution); 
@@ -73,17 +78,9 @@ public class DestroyMethod
 		this.uncoveredTripsOfVehicle = new ArrayList<Trip>(); 
 		this.uncoveredTripsOfDriver = new ArrayList<Trip>(); 
 		this.iteration = iteration; 
+		this.noImprovement = noImprovement; 
 		this.rnd = new Random(this.iteration); 
-		this.degreeOfDestruction = 0.1; 
-		if(this.trips.size() < 250)
-		{
-			this.degreeOfDestruction = 0.3; 
-		}
-		else if(this.trips.size() < 500)
-		{
-			this.degreeOfDestruction = 0.2; 
-		}
-		System.out.println("Degree of destruction = " + this.degreeOfDestruction);
+	
 		
 		this.initalSolutionLocalSearch = initalSolutionLocalSearch; 
 		
@@ -114,7 +111,24 @@ public class DestroyMethod
 			}
 			else if(chosenDestroyMethod == 2)
 			{
-				randomRemovalOfBlocks(); 
+				int maxIter = 1000; 
+				double additionalDegree = 0.1; 
+				if(this.trips.size() > 500)
+				{
+					maxIter = 2000;
+					additionalDegree = 0.05; 
+				}
+				
+				if(this.iteration <= maxIter || this.noImprovement < 100)
+				{
+					worstRemovalOfDuties(); 
+				}
+				else
+				{
+					double destruction = this.degreeOfIntegratedDestruction + additionalDegree; 
+					randomRemoval(destruction); 
+				}
+				    
 			}
 		}
 		
@@ -169,8 +183,9 @@ public class DestroyMethod
 	{
 		this.dutiesToBeRemoved = new ArrayList<Duty>(); 
 		System.out.println("Number of duties in solution = " + this.dutiesInSolution.size());
-		int numberOfDutiesToDestroy = Math.max(2, (int)(this.degreeOfDestruction*this.dutiesInSolution.size())); 
-		Collections.shuffle(this.dutiesInSolution, this.rnd);
+		System.out.println("Degree of destruction = " + this.degreeOfDutyDestruction);
+		int numberOfDutiesToDestroy = Math.max(2, (int)(this.degreeOfDutyDestruction*this.dutiesInSolution.size())); 
+		Collections.shuffle(this.dutiesInSolution/*, this.rnd*/);
 		this.dutiesToBeRemoved.addAll(this.dutiesInSolution.subList(0, numberOfDutiesToDestroy)); 	
 		
 		this.blocksToBeRemoved = new ArrayList<Block>(); 
@@ -180,18 +195,28 @@ public class DestroyMethod
 	{
 		this.blocksToBeRemoved = new ArrayList<Block>();
 		
-		int numberOfBlocksToRemove = Math.max(2, (int)(this.degreeOfDestruction*this.blocksInSolution.size())); 
-		Collections.shuffle(this.blocksInSolution, this.rnd); 
+		int numberOfBlocksToRemove = Math.max(2, (int)(this.degreeOfSequentialDestruction*this.blocksInSolution.size())); 
+		System.out.println("Degree of destruction = " + this.degreeOfSequentialDestruction);
+		Collections.shuffle(this.blocksInSolution/*, this.rnd*/); 
 		this.blocksToBeRemoved.addAll(this.blocksInSolution.subList(0, numberOfBlocksToRemove)); 
 		
 		this.dutiesToBeRemoved = removeDutiesBasedOnRemovedBlocks(this.blocksToBeRemoved); 
 	}
 	
-	private void worstRemoval()
+	private void randomRemoval(double destruction)
 	{
-		this.dutiesToBeRemoved = new ArrayList<Duty>();
 		
-		this.blocksToBeRemoved = new ArrayList<Block>(); 
+		this.blocksToBeRemoved = new ArrayList<Block>();
+		
+		int numberOfBlocksToRemove = Math.max(2, (int)(destruction*this.blocksInSolution.size())); 
+		System.out.println("Degree of destruction = " + destruction);
+		Collections.shuffle(this.blocksInSolution/*, this.rnd*/); 
+		this.blocksToBeRemoved.addAll(this.blocksInSolution.subList(0, numberOfBlocksToRemove)); 
+		
+		this.dutiesToBeRemoved = removeDutiesBasedOnRemovedBlocks(this.blocksToBeRemoved);
+		
+		
+	/*	this.blocksToBeRemoved = new ArrayList<Block>(); 
 	
 		
 		SequenceGeneration seqGen = new SequenceGeneration(this.trips, this.blocksInSolution, this.dutiesInSolution); 
@@ -199,23 +224,24 @@ public class DestroyMethod
 		Collections.sort(allSequences);
 		Collections.reverse(allSequences);
 		
-		int numberOfBlocksToDestroy = Math.max(2, (int)(this.degreeOfDestruction*this.blocksInSolution.size()));
+		int numberOfBlocksToDestroy = Math.max(2, (int)(this.degreeOfIntegratedDestruction*this.blocksInSolution.size()));
+		System.out.println("Degree of destruction = " + this.degreeOfIntegratedDestruction);
 		List<Sequence> candidates = allSequences.subList(0, numberOfBlocksToDestroy); 
-		Collections.shuffle(candidates, this.rnd);
+		Collections.shuffle(candidates/*, this.rnd);
 		Sequence selectedSequence = candidates.get(0); 
 		allSequences.remove(selectedSequence); 
 		
 		this.blocksToBeRemoved.add(selectedSequence.getBlockCoveringSequence()); 
-		int latestEndtTime = selectedSequence.getDutyCoveringSequence().getEndTime() + selectedSequence.getDutyCoveringSequence().getDutyType().getMaxDuration(); 
-		int earliestStartTime = Math.max(0, selectedSequence.getDutyCoveringSequence().getStartTime() - selectedSequence.getDutyCoveringSequence().getDutyType().getMaxDuration()); 
-		
+		//int latestEndtTime = selectedSequence.getDutyCoveringSequence().getEndTime() + selectedSequence.getDutyCoveringSequence().getDutyType().getMaxDuration(); 
+		//int earliestStartTime = Math.max(0, selectedSequence.getDutyCoveringSequence().getStartTime() - selectedSequence.getDutyCoveringSequence().getDutyType().getMaxDuration()); 
+		Collections.shuffle(allSequences/*, this.rnd);
 		for(Sequence seq : allSequences)
 		{
 			if(!this.blocksToBeRemoved.contains(seq.getBlockCoveringSequence()))
 			{
-				 if(!seq.getDutyCoveringSequence().equals(selectedSequence.getDutyCoveringSequence()))
+				 //if(!seq.getDutyCoveringSequence().equals(selectedSequence.getDutyCoveringSequence()))
 				 {
-					 if(seq.getDutyCoveringSequence().getStartTime() >= earliestStartTime && seq.getDutyCoveringSequence().getEndTime() <= latestEndtTime)
+					 //if(seq.getDutyCoveringSequence().getStartTime() >= earliestStartTime && seq.getDutyCoveringSequence().getEndTime() <= latestEndtTime)
 					 {
 						 this.blocksToBeRemoved.add(seq.getBlockCoveringSequence()); 
 					 }
@@ -226,9 +252,78 @@ public class DestroyMethod
 			{
 				break; 
 			}
-		}
+		}*/
 		
 		this.dutiesToBeRemoved = removeDutiesBasedOnRemovedBlocks(this.blocksToBeRemoved); 
+	}
+	
+	private void worstRemovalOfDuties()
+	{
+		this.dutiesToBeRemoved = new ArrayList<Duty>(); 
+		System.out.println("Number of duties in solution = " + this.dutiesInSolution.size());
+		
+		Collections.sort(this.dutiesInSolution);
+		Collections.reverse(this.dutiesInSolution);
+		
+		int numberOfDutiesToDestroy = Math.max(2, (int)(this.degreeOfIntegratedDestruction*this.dutiesInSolution.size())); 
+		List<Duty> candidates = this.dutiesInSolution.subList(0, numberOfDutiesToDestroy); 
+		Collections.shuffle(candidates/*, this.rnd*/);
+		Duty selectedDuty = candidates.get(0); 
+		
+		this.dutiesToBeRemoved.add(selectedDuty); 
+		/*Collections.shuffle(this.dutiesInSolution/*, this.rnd);
+		for(Duty duty : this.dutiesInSolution)
+		{
+			if(!this.dutiesToBeRemoved.contains(duty))
+			{
+				this.dutiesToBeRemoved.add(duty); 
+			}
+			
+			if(this.dutiesToBeRemoved.size() >= numberOfDutiesToDestroy)
+			{
+				break; 
+			}
+		}*/
+		
+		this.blocksToBeRemoved = removeBlocksBasedOnRemovedDuties(this.dutiesToBeRemoved); 
+		
+		List<Block> remainingBlocks = new ArrayList<Block>(); 
+		remainingBlocks.addAll(this.blocksInSolution); 
+		remainingBlocks.removeAll(this.blocksToBeRemoved); 
+		
+		Collections.sort(remainingBlocks);
+		Collections.reverse(remainingBlocks);
+		if(!remainingBlocks.isEmpty())
+		{
+			int numberOfBlocksToRemove = (int)(this.degreeOfIntegratedDestruction * remainingBlocks.size()); 
+			List<Block> candidatesBlocks = remainingBlocks.subList(0, numberOfBlocksToRemove); 
+			Collections.shuffle(candidatesBlocks);
+			Block selectedBlock = candidatesBlocks.get(0); 
+			this.blocksToBeRemoved.add(selectedBlock); 
+			Collections.shuffle(remainingBlocks);
+			
+			for(Block block : remainingBlocks)
+			{
+				if(this.blocksToBeRemoved.size() >= numberOfBlocksToRemove)
+				{
+					break; 
+				}
+				
+				if(!this.blocksToBeRemoved.contains(block))
+				{
+					this.blocksToBeRemoved.add(block); 
+				}
+			}
+			
+			List<Duty> otherDuties = removeDutiesBasedOnRemovedBlocks(this.blocksToBeRemoved); 
+			for(Duty duty : otherDuties)
+			{
+				if(!this.dutiesToBeRemoved.contains(duty))
+				{
+					this.dutiesToBeRemoved.add(duty); 
+				}
+			}
+		}
 	}
 	
 	private List<Duty> removeDutiesBasedOnRemovedBlocks(List<Block> blocksToBeRemoved)
@@ -295,32 +390,50 @@ public class DestroyMethod
 	{
 		List<Block> blocksToBeRemoved = new ArrayList<Block>(); 
 		
-		Set<Deadrun> deadrunsInRemovedBlocks = new HashSet<Deadrun>(); 
-		Set<IdleTime> idleTimesInRemovedBlocks = new HashSet<IdleTime>(); 
+		Set<Deadrun> deadrunsInRemovedDuties = new HashSet<Deadrun>(); 
+		Set<IdleTime> idleTimesInRemovedDuties = new HashSet<IdleTime>(); 
+		List<Trip> tripsInRemovedDuties = new ArrayList<Trip>(); 
+		
 		for(Duty duty : dutiesToBeRemoved)
 		{
-			deadrunsInRemovedBlocks.addAll(duty.getDeadrunsInDuty()); 
-			idleTimesInRemovedBlocks.addAll(duty.getIdleTimesInDuty()); 
+			deadrunsInRemovedDuties.addAll(duty.getDeadrunsInDuty()); 
+			idleTimesInRemovedDuties.addAll(duty.getIdleTimesInDuty()); 
+			tripsInRemovedDuties.addAll(duty.getTripsInDuty());
 		}
 		
 		for(Block block : this.blocksInSolution)
 		{
 			boolean added = false; 
-			for(Deadrun deadrun : block.getDeadrunsInBlock())
+			
+			for(Trip trip : block.getTripsInBlock())
 			{
-				if(deadrunsInRemovedBlocks.contains(deadrun))
+				if(tripsInRemovedDuties.contains(trip))
 				{
 					blocksToBeRemoved.add(block);
 					added = true; 
-					break; 
+					break;
 				}
 			}
 			
 			if(!added)
 			{
+				for(Deadrun deadrun : block.getDeadrunsInBlock())
+				{
+					if(deadrunsInRemovedDuties.contains(deadrun))
+					{
+						blocksToBeRemoved.add(block);
+						added = true; 
+						break; 
+					}
+				}
+			}
+		
+			
+			if(!added)
+			{
 				for(IdleTime idleTime : block.getIdleTimesInBlock())
 				{
-					if(idleTimesInRemovedBlocks.contains(idleTime))
+					if(idleTimesInRemovedDuties.contains(idleTime))
 					{
 						blocksToBeRemoved.add(block);
 						added = true; 

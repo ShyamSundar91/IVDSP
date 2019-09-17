@@ -62,8 +62,9 @@ public class RepairMethod
 	private Map<Deadrun, Double> deadrunMultipliers;
 	private Map<IdleTime, Double> idleTimeMultipliers; 
 	private boolean initalSolutionLocalSearch; 
+	private int integratedIterationLimit; 
 	
-	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver, boolean initalSolutionLocalSearch) throws IloException
+	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver, boolean initalSolutionLocalSearch, int integratedIterationLimit) throws IloException
 	{
 		this.chosenDestroyMethod = chosenDestroyMethod; 
 		this.allTrips = allTrips;  
@@ -86,7 +87,7 @@ public class RepairMethod
 		this.dutiesInSolution = new ArrayList<Duty>(); 
 		this.objective = Double.MAX_VALUE; 
 		this.initalSolutionLocalSearch = initalSolutionLocalSearch; 
-		
+		this.integratedIterationLimit = integratedIterationLimit; 
 		
 		if(this.initalSolutionLocalSearch)
 		{
@@ -228,6 +229,7 @@ public class RepairMethod
 			}
 		}
 		
+		List<Trip> uncoverdTrips = new ArrayList<Trip>(); 
 		Map<Block, Integer> initialBlocks = new HashMap<Block, Integer>(); 
 		for(Block block : this.intermediateBlockSolution)
 		{
@@ -241,6 +243,8 @@ public class RepairMethod
 			initialBlocks.put(block, 0);
 			this.deadrunInSolution.addAll(block.getDeadrunsInBlock());
 			this.idleTimeInSolution.addAll(block.getIdleTimesInBlock());
+			
+			uncoverdTrips.addAll(block.getTripsInBlock()); 
 		}
 		
 		Map<Duty, Integer> initialDuties = new HashMap<Duty, Integer>();
@@ -256,12 +260,27 @@ public class RepairMethod
 			initialDuties.put(duty, 0);
 			this.deadrunInSolution.addAll(duty.getDeadrunsInDuty()); 
 			this.idleTimeInSolution.addAll(duty.getIdleTimesInDuty()); 
+			
+			uncoverdTrips.addAll(duty.getTripsInDuty()); 
 		}
 		
-		BranchAndBoundIntegrated bb = new BranchAndBoundIntegrated(this.allTrips, initialBlocks, initialDuties, this.deadrunInSolution, this.idleTimeInSolution, this.vehicleGraphsCopy, this.driverGraphsCopy, true); 
+		uncoverdTrips = uncoverdTrips.stream().distinct().collect(Collectors.toList()); 
+		
+		BranchAndBoundIntegrated bb = new BranchAndBoundIntegrated(this.allTrips, initialBlocks, initialDuties, this.deadrunInSolution, this.idleTimeInSolution, this.vehicleGraphsCopy, this.driverGraphsCopy, true, this.integratedIterationLimit); 
 		this.objective = bb.getObjective(); 
 		this.blocksInSoution.addAll(bb.getBlocksInSolution()); 
 		this.dutiesInSolution.addAll(bb.getDutiesInSolution()); 
+		/*for(Block block : this.intermediateBlockSolution)
+		{
+			this.objective = this.objective + block.getTotalCostOfBlock(); 
+			this.blocksInSoution.add(block); 
+		}
+		
+		for(Duty duty : this.intermediateDutySolution)
+		{
+			this.objective = this.objective + duty.getTotalCostOfDuty(); 
+			this.dutiesInSolution.add(duty); 
+		}*/
 	}
 	
 	private void createGraphsCopy()

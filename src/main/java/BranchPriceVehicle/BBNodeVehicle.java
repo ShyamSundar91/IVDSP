@@ -85,6 +85,7 @@ public class BBNodeVehicle
 		
 		this.cplex.setOut(null);
 		this.cplex.setParam(IloCplex.Param.Parallel, 1);
+		this.cplex.setParam(IloCplex.Param.Threads, 4);
 		double previousObj = Double.MAX_VALUE;
 		 
 		while(status != 1)

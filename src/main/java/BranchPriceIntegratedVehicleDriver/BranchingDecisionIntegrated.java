@@ -36,6 +36,7 @@ public class BranchingDecisionIntegrated
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs; 
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
 	private boolean earlyTermination; 
+	private int iterationLimit; 
 	
 	@Getter
 	private BBNodeIntegrated childNode; 
@@ -50,6 +51,7 @@ public class BranchingDecisionIntegrated
 		this.deadrunsForChildNode = parentNode.getDeadruns(); 
 		this.idleTimesForChildNode = parentNode.getIdleTimes(); 
 		this.earlyTermination = parentNode.isEarlyTermination(); 
+		this.iterationLimit = parentNode.getIterationLimit(); 
 
 		mixedVariableFixing(parentNode.getFractionalValuesOfBlocks(), parentNode.getFractionalValuesOfDuties()); 
 		createChildNode(parentNode); 
@@ -69,6 +71,18 @@ public class BranchingDecisionIntegrated
 			Assert.assertTrue(!dutyVariables.isEmpty());
 			removeTripsDeadrunsIdleTimesOfFixedDuties(dutyVariables); 
 		}
+		
+		/*List<Duty> dutyVariables = dutyVariablesToFix(fractionalValuesOfDuties);
+		if(!dutyVariables.isEmpty())
+		{
+			removeTripsDeadrunsIdleTimesOfFixedDuties(dutyVariables); 
+			
+		}
+		else
+		{
+			List<Block> blockVariables =  blockVariablesToFix(fractionalValuesOfBlocks); 
+			removeTripsOfFixedBlocks(blockVariables); 
+		}*/
 	}
 	
 	private void createChildNode(BBNodeIntegrated parentNode)
@@ -83,7 +97,7 @@ public class BranchingDecisionIntegrated
 			duty.resetDutyInMP();
 		}
 		
-		this.childNode = new BBNodeIntegrated(this.blocksForChildNode, this.dutiesForChildNode, this.trips, this.deadrunsForChildNode, this.idleTimesForChildNode, this.vehicleGraphs, this.driverGraphs, this.earlyTermination); 
+		this.childNode = new BBNodeIntegrated(this.blocksForChildNode, this.dutiesForChildNode, this.trips, this.deadrunsForChildNode, this.idleTimesForChildNode, this.vehicleGraphs, this.driverGraphs, this.earlyTermination, this.iterationLimit); 
 	}
 	
 	private List<Block> blockVariablesToFix(Map<Block, Double> fractionalValuesOfBlockVariables)
@@ -241,8 +255,12 @@ public class BranchingDecisionIntegrated
 				
 			}
 			
-			dutiesToFixForChildNode.add(closest);
-			System.out.println("Fix duty " + closest.getDutyId() + " with value " + max);
+			if(closest != null)
+			{
+				dutiesToFixForChildNode.add(closest);
+				System.out.println("Fix duty " + closest.getDutyId() + " with value " + max);
+			}
+			
 		}
 		
 		for(Duty duty : dutiesToFixForChildNode)

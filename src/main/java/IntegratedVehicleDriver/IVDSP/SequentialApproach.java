@@ -90,7 +90,7 @@ public class SequentialApproach
 	
 	private void vehicleSchedulingProblem() throws IloException
 	{
-		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphs, new HashMap<Block, Integer>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), false);
+		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphs, new HashMap<Block, Integer>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), true);
 		this.blocksInSolution = bbVehicle.getBlocksInSolution();
 		this.deadrunsInSolution = new HashSet<Deadrun>(bbVehicle.getDeadrunsInSolution()); 
 		this.idleTimesInSolution = new HashSet<IdleTime>(bbVehicle.getIdleTimesInSolution()); 
@@ -122,7 +122,7 @@ public class SequentialApproach
 			graph.removeAllEdges(arcsToRemove); 
 		}
 		
-		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.driverGraphs, new HashMap<Duty, Integer>(), false);  
+		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.driverGraphs, new HashMap<Duty, Integer>(), true);  
 		this.dutiesInSolution = dsp.getDutiesInSolution(); 
 		this.nodesDriver = dsp.getNodeNo(); 
 		this.masterDriver = dsp.getTotalTimeSpentInMaster(); 

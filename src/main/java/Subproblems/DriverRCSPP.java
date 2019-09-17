@@ -115,11 +115,11 @@ public class DriverRCSPP
 				if(!selectedLabel.isLabelDriverVisited())
 				{
 					//Cannot get this to work for an exact column generation. Have to look at it some other time. 
-					/*if(!selectedLabel.getUpdatedResources().isAttendedBus())
+					if(!selectedLabel.getUpdatedResources().isAttendedBus())
 					{
 						Set<DriverArc> selected = new HashSet<DriverArc>(outgoingArcs.stream().filter(a -> a.isAttendingBus()).collect(Collectors.toSet()));
 						outgoingArcs = selected; 
-					}*/					
+					}					
 					
 					
 					for(DriverArc outgoingArc : outgoingArcs)

@@ -35,7 +35,14 @@ public class Block implements Comparable<Block>
 		this.blockActivities = blockActivities; 
 		this.distance = this.blockActivities.stream().mapToDouble(b -> b.getDistance()).sum(); 
 		this.totalCostOfBlock = this.distance*this.vehicleType.getCostPerkm() + this.vehicleType.getFixedCost(); 
-		this.deltaOfBlock = (this.totalCostOfBlock)/(double)this.tripsInBlock.size(); 
+		
+		double totalDrivingDistance = 0; 
+		for(Trip trip : this.tripsInBlock)
+		{
+			totalDrivingDistance = totalDrivingDistance + trip.getDistance(); 
+		}
+		
+		this.deltaOfBlock = (this.totalCostOfBlock)/(double)totalDrivingDistance; 
 		
 		this.numberOfIterationsInMP = 0; 
 		this.numberOfTimesChosen = 0; 

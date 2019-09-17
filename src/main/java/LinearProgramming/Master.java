@@ -206,6 +206,7 @@ public class Master
 		this.cplex.setOut(null);
 		//this.cplex.setParam(IloCplex.BooleanParam.PreInd, false);
 		this.cplex.setParam(IloCplex.Param.Parallel, 1);
+		this.cplex.setParam(IloCplex.Param.Threads, 4);
 		this.cplex.setParam(IloCplex.Param.RootAlgorithm, IloCplex.Algorithm.Barrier);
 		//this.cplex.setParam(IloCplex.IntParam.AdvInd, 2);
 		while(status != 1)
@@ -234,7 +235,6 @@ public class Master
 			if(this.cplex.solve())
 			{
 				System.out.println("LP Objective = " + this.cplex.getObjValue());
-				System.out.println("Previous LP = " + this.previousLpObjective);
 				double endtMP = System.currentTimeMillis(); 
 				this.totalTimeOfMaster = this.totalTimeOfMaster + ((endtMP-startMP)/(double)1000) ;
 				this.lpObjective = this.cplex.getObjValue(); 
@@ -273,7 +273,7 @@ public class Master
 				iter.add(totalTime); 
 				this.lowerBound.add(iter); 
 				System.out.println(totalTime);
-				if(totalTime > 28800)
+				if(totalTime >= 172800)
 				{
 					status = 1; 
 				}
@@ -305,9 +305,6 @@ public class Master
 							this.noImprovement = 0;
 						}
 					}
-					
-						
-					//this.previousLpObjective = this.lpObjective; 
 				}
 				else
 				{

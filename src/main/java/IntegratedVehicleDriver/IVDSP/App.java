@@ -46,14 +46,33 @@ import ilog.concert.IloException;
 
 public class App 
 {
-    public static void main( String[] args ) throws FileNotFoundException, IOException, IloException
+	
+    public static void main( String[] args) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = /*args[0];*/     "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASVestSmall/";
+    	String inputPath = /*args[0];*/    "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASSydNord/";
     	ReadInstance rd = new ReadInstance(inputPath); 
+    	double d1 = 0.3;  
+    	double d2 = 0.2; 
+    	double d3 = 0.1;
+    	int integratedIterationLimit = 60;  
+    	
+    	/*if(args.length > 1)
+    	{
+    		d1 = Double.parseDouble(args[1]);  //0.3; 
+        	d2 = Double.parseDouble(args[2]); //0.3; 
+        	d3 = Double.parseDouble(args[3]); //0.3; 
+        	integratedIterationLimit = Integer.parseInt(args[4]);  
+        	System.out.println("Degree of duty destruction = " + d1);
+        	System.out.println("Degree of sequential destruction = " + d2);
+        	System.out.println("Degree of integrated destruction = " + d3);
+        	System.out.println("Integrated node time limit = " + integratedIterationLimit);
+    	}*/
+    	
+    	
     	System.out.println("***********************************************");
     	
-    	createGraphs(rd.getAllNodes(), rd.getAllVehicleTypes(), rd.getAllTrips(), rd.getAllVehicleTravels(), rd.getAllDutyTypes(), rd.getAllDriverTravels()); 
+    	createGraphs(rd.getAllNodes(), rd.getAllVehicleTypes(), rd.getAllTrips(), rd.getAllVehicleTravels(), rd.getAllDutyTypes(), rd.getAllDriverTravels(), d1, d2, d3, integratedIterationLimit); 
     	
     	/*long startTime = System.currentTimeMillis(); 
     	System.out.println("Algorithm....");
@@ -71,7 +90,7 @@ public class App
     }
     
     
-    private static void createGraphs(Set<Node> allNodes, Set<VehicleType> allVehicleTypes, List<Trip> allTrips, Set<VehicleTravel> allVehicleTravels, List<DutyType> allDutyTypes, List<DriverTravel> allDriverTravels) throws IloException
+    private static void createGraphs(Set<Node> allNodes, Set<VehicleType> allVehicleTypes, List<Trip> allTrips, Set<VehicleTravel> allVehicleTravels, List<DutyType> allDutyTypes, List<DriverTravel> allDriverTravels, double degreeOfDutyDestruction, double degreeOfSequentialDestruction, double degreeOfIntegratedDestruction, int integratedIterationLimit) throws IloException
     {
       	System.out.println("************** Graph Generation ***************");
     	Set<VehicleTypeDepot> allVehicleTypeDepots = new HashSet<VehicleTypeDepot>(); 
@@ -149,8 +168,8 @@ public class App
     	
     	//NeighborhoodGraphGeneration neigh = new NeighborhoodGraphGeneration(allDutyTypeDepots,  allDriverTravels, allNodes, allTrips, vehicleGraphs, driverGraphs); 
     	//Master master = new Master(allTrips, allVehicleTravels, neigh.getNeighborhoodGraphs()); 
-    	//ColumnGeneration cg = new ColumnGeneration(allTrips, allDeadruns, allIdleTimes, vehicleGraphs, driverGraphs, /*initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj()*/ new ArrayList<Block>(), new ArrayList<Duty>(), Double.MAX_VALUE); 
-    	LocalSearch localSearch = new LocalSearch(allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj(), false, 100); 
+
+    	LocalSearch localSearch = new LocalSearch(allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj(), false, 1000, degreeOfDutyDestruction, degreeOfSequentialDestruction, degreeOfIntegratedDestruction, integratedIterationLimit); 
     	//blocksGenerated.addAll(initial.getBlocksInSolution()); 
     	//dutiesGenerated.addAll(initial.getDutiesInSolution()); 
     	Set<Deadrun> deadrunsInSolution = new HashSet<Deadrun>(); 

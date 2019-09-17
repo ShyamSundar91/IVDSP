@@ -79,20 +79,47 @@ public class InitialSolutionController
 		
 		lineScheduling(); 
 		
-		//localSearch(); 
+		/*if(this.allTrips.size() > 500)
+		{
+			localSearch(); 
+		}*/
 	}
 	
 	private void lineScheduling() throws IloException
 	{
 		System.out.println("Number of lines = " + this.lines.size());
 		
+		List<List<Integer>> setOfLines = new ArrayList<List<Integer>>(); 
+		List<Integer> subset = new ArrayList<Integer>(); 
+		int max = 1; 
+		/*if(this.lines.size() > 10)
+		{
+			max = 2; 
+		}*/
 		for(Integer lineNumber : this.lines)
+		{
+			subset.add(lineNumber); 
+			if(subset.size() >= max)
+			{
+				setOfLines.add(subset);
+				subset = new ArrayList<Integer>();
+			}
+		}
+		
+		if(!subset.isEmpty())
+		{
+			setOfLines.add(subset);
+		}
+		
+		for(List<Integer> sub : setOfLines)
 		{
 			long start = System.currentTimeMillis(); 
 			
-			List<Trip> tripsInLine = this.allTrips.stream().filter(t -> t.getLineNumber() == lineNumber.intValue()).collect(Collectors.toList()); 
+			List<Trip> tripsInLine = this.allTrips.stream().filter(t -> sub.contains(t.getLineNumber())).collect(Collectors.toList()); 
 			System.out.println("***************************************************");
-			System.out.println("Line number = " + lineNumber + ", number of trips = " + tripsInLine.size());
+			System.out.print("Line numbers = " );
+			sub.forEach(l -> System.out.print(l + ", "));
+			System.out.println(" Number of trips = " + tripsInLine.size());
 			
 			GraphCopy graphCopy = new GraphCopy(this.vehicleGraphs, this.driverGraphs, tripsInLine, tripsInLine,/* this.allTrips, this.allTrips,*/ new HashSet<Deadrun>(), new HashSet<IdleTime>());  
 			Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphCopy = graphCopy.getVehicleGraphsCopy(); 
@@ -117,7 +144,7 @@ public class InitialSolutionController
 		{
 			iter = 25; 
 		}*/
-		LocalSearch localSearch = new LocalSearch(allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, this.blocksInSolution, this.dutiesInSolution, this.initialSolutionObj, true, iter); 
+		LocalSearch localSearch = new LocalSearch(allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, this.blocksInSolution, this.dutiesInSolution, this.initialSolutionObj, true, iter, 0.3, 0.2, 0.1, 50); 
 		this.blocksInSolution.clear();
 		this.dutiesInSolution.clear();
 		this.blocksInSolution.addAll(localSearch.getBestBlockSolution()); 

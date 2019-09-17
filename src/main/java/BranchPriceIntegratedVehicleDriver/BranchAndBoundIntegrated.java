@@ -40,6 +40,7 @@ public class BranchAndBoundIntegrated
 	private List<BBNodeIntegrated> nodes; 
 	private Map<Integer, Double> lpObjectivesAtEachNode; 
 	private boolean earlyTermination;
+	private int iterationLimit; 
 	
 	@Getter
 	private List<Block> blocksInSolution; 
@@ -55,12 +56,13 @@ public class BranchAndBoundIntegrated
 	private Map<Deadrun, Double> deadrunDuals;
 	@Getter
 	private Map<IdleTime, Double> idleTimeDuals; 
-	public BranchAndBoundIntegrated(List<Trip> trips, Map<Block, Integer> initialBlocksAndGenerated,  Map<Duty, Integer> initialDutiesAndGenerated, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, boolean earlyTermination) throws IloException
+	public BranchAndBoundIntegrated(List<Trip> trips, Map<Block, Integer> initialBlocksAndGenerated,  Map<Duty, Integer> initialDutiesAndGenerated, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, boolean earlyTermination, int iterationLimit) throws IloException
 	{
 		this.trips = trips; 
 		this.vehicleGraphs = vehicleGraphs; 
 		this.driverGraphs = driverGraphs; 
 		this.earlyTermination = earlyTermination; 
+		this.iterationLimit = iterationLimit; 
 		
 		this.initialBlocksAndGenerated = new HashMap<Block, Integer>(initialBlocksAndGenerated); 
 		this.initialDutiesAndGenerated = new HashMap<Duty, Integer>(initialDutiesAndGenerated); 
@@ -78,7 +80,7 @@ public class BranchAndBoundIntegrated
 	
 	private void createRootNode()
 	{
-		BBNodeIntegrated rootNode = new BBNodeIntegrated(this.initialBlocksAndGenerated, this.initialDutiesAndGenerated, this.trips, this.deadruns, this.idleTimes, this.vehicleGraphs, this.driverGraphs, this.earlyTermination); 
+		BBNodeIntegrated rootNode = new BBNodeIntegrated(this.initialBlocksAndGenerated, this.initialDutiesAndGenerated, this.trips, this.deadruns, this.idleTimes, this.vehicleGraphs, this.driverGraphs, this.earlyTermination, this.iterationLimit); 
 		this.nodes.add(rootNode); 
 	}
 	

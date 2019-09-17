@@ -122,8 +122,8 @@ public class BranchAndBoundVehicle
 			for(Integer node : this.lpObjectivesAtEachNode.keySet())
 			{
 				System.out.println(node + "; " + this.lpObjectivesAtEachNode.get(node));
-				double val1 = Math.round(this.lpObjectivesAtEachNode.get(node).get(0) * 100.0) / 100.0; 
-				Assert.assertTrue(val1 - nodeLp >= 0);
+				double val1 = this.lpObjectivesAtEachNode.get(node).get(0); 
+				Assert.assertTrue(val1 - (nodeLp - 1e-2) >= 0);
 				nodeLp = val1; 
 			}
 		}

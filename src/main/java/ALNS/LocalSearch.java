@@ -39,12 +39,15 @@ public class LocalSearch
 	private double degreeOfSequentialDestruction; 
 	private double degreeOfIntegratedDestruction; 
 	private int integratedIterationLimit; 
+	private int integratedTimeLimit; 
+	private int localSearchTimeLimit; 
 	@Getter
 	private List<Block> bestBlockSolution; 
 	@Getter
 	private List<Duty> bestDutySolution;
 	@Getter
 	private double bestObjective; 
+	private int numberOfRecharges; 
 	private int noImprovement; 
 	
 	private int score1; 
@@ -66,8 +69,9 @@ public class LocalSearch
 	
 	private int[] totalNumberOfTimesMethodChosen; 
 	private double[] totalTimeTakenOfRepairMethods; 
-	public LocalSearch(List<Trip> allTrips, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective, boolean initalSolutionLocalSearch, int maxiterations, 
-			double degreeOfDutyDestruction, double degreeOfSequentialDestruction, double degreeOfIntegratedDestruction, int integratedIterationLimit) throws IloException
+	private double startTimeOfAlgorithm; 
+	public LocalSearch(double startTimeOfAlgorithm, List<Trip> allTrips, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective, boolean initalSolutionLocalSearch, int maxiterations, 
+			double degreeOfDutyDestruction, double degreeOfSequentialDestruction, double degreeOfIntegratedDestruction, int integratedIterationLimit, int integratedTimeLimit, int localSearchTimeLimit) throws IloException
 	{
 		this.allTrips = allTrips;  
 		this.deadrunMultipliers = deadrunMultipliers; 
@@ -78,9 +82,13 @@ public class LocalSearch
 		this.degreeOfSequentialDestruction = degreeOfSequentialDestruction; 
 		this.degreeOfIntegratedDestruction = degreeOfIntegratedDestruction; 
 		this.integratedIterationLimit = integratedIterationLimit; 
+		this.integratedTimeLimit = integratedTimeLimit; 
+		this.localSearchTimeLimit = localSearchTimeLimit; 
 		this.bestBlockSolution = new ArrayList<Block>(bestBlockSolution); 
 		this.bestDutySolution = new ArrayList<Duty>(bestDutySolution); 
 		this.bestObjective = bestObjective; 
+		this.startTimeOfAlgorithm = startTimeOfAlgorithm; 
+		this.numberOfRecharges = 0; 
 		
 		this.weightAtEachIteration = new HashMap<Integer, List<Double>>(); 
 		this.scoreAtEachIteration = new HashMap<Integer, List<Integer>>(); 
@@ -99,6 +107,10 @@ public class LocalSearch
 			for(BlockActivity ba : block.getBlockActivities())
 			{
 				System.out.println(block.getBlockId() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
+				if(ba.getActivity().equals("Recharging"))
+				{
+					this.numberOfRecharges++; 
+				}
 			}
 		}
 		
@@ -164,18 +176,18 @@ public class LocalSearch
 			System.out.println("*****************************************" + " Local search iteration number = " + i + " *****************************************");
 			System.out.println("Selected destroy method = " + selectedDestroyMethod);
 			
-			double dutyDestruction = this.degreeOfDutyDestruction; 
+			/*double dutyDestruction = this.degreeOfDutyDestruction; 
 			double sequentialDestruction = this.degreeOfSequentialDestruction; 
 			double integratedDestruction = this.degreeOfIntegratedDestruction; 
 			if(this.allTrips.size() > 500)
 			{
-				if(i < 500)
+				if(i < 100)
 				{
 					dutyDestruction = Math.min(0.1, this.degreeOfDutyDestruction); 
 					sequentialDestruction = Math.min(0.1,this.degreeOfSequentialDestruction); 
 					integratedDestruction = Math.min(0.05, this.degreeOfIntegratedDestruction); 
 				}
-				else if( i < 1000)
+				else if( i < 200)
 				{
 					dutyDestruction = Math.min(0.2, this.degreeOfDutyDestruction); 
 					sequentialDestruction = Math.min(0.15,this.degreeOfSequentialDestruction); 
@@ -187,9 +199,9 @@ public class LocalSearch
 					sequentialDestruction = Math.min(0.2,this.degreeOfSequentialDestruction); 
 					integratedDestruction = Math.min(0.1, this.degreeOfIntegratedDestruction);
 				}
-			}
+			}*/
 			
-			DestroyMethod destroy = new DestroyMethod(i, selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, this.bestBlockSolution, this.bestDutySolution, this.initalSolutionLocalSearch, dutyDestruction, sequentialDestruction, integratedDestruction, this.noImprovement); 
+			DestroyMethod destroy = new DestroyMethod(i, selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, this.bestBlockSolution, this.bestDutySolution, this.initalSolutionLocalSearch, this.degreeOfDutyDestruction, this.degreeOfSequentialDestruction, this.degreeOfIntegratedDestruction, this.noImprovement); 
 			List<Block> intermediateBlockSolution = destroy.getBlocksInSolution(); 
 			List<Duty> intermediateDutySolution = destroy.getDutiesInSolution();
 			List<Block> blocksRemoved = destroy.getBlocksToBeRemoved(); 
@@ -200,7 +212,7 @@ public class LocalSearch
 			List<Trip> uncoveredTripsOfDriver = destroy.getUncoveredTripsOfDriver(); 
 			
 			double start = System.currentTimeMillis(); 
-			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver, this.initalSolutionLocalSearch, this.integratedIterationLimit); 
+			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver, this.initalSolutionLocalSearch, this.integratedIterationLimit, this.integratedTimeLimit); 
 			double end = System.currentTimeMillis(); 
 			this.totalNumberOfTimesMethodChosen[selectedDestroyMethod] = this.totalNumberOfTimesMethodChosen[selectedDestroyMethod] + 1; 
 			this.totalTimeTakenOfRepairMethods[selectedDestroyMethod] = this.totalTimeTakenOfRepairMethods[selectedDestroyMethod] + (end-start)/(double)(1000); 
@@ -257,9 +269,9 @@ public class LocalSearch
 			}
 			
 			double endTime = System.currentTimeMillis(); 
-			double totalTime = (endTime - startTime)/1000.00; 
+			double totalTime = (endTime - this.startTimeOfAlgorithm)/1000.00; 
 			System.out.println("Running time = " + totalTime);
-			if(totalTime >= 86400)
+			if(totalTime >= this.localSearchTimeLimit)
 			{
 				status = 1; 
 			}
@@ -362,6 +374,7 @@ public class LocalSearch
 			});
 			System.out.println();
 		}
+		System.out.println("Number of recharges = " + this.numberOfRecharges);
 		
 		System.out.println("Time taken by repair methods...");
 		System.out.println("Total number of iterations performed = " + this.maxIterations);

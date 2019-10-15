@@ -50,7 +50,10 @@ public class IntegratedMasterProblem
 	private Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs; 
 	@Getter
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
-
+	@Getter
+	private int iterationLimit; 
+	@Getter
+	private int timeLimit; 
 	
 	private IloCplex cplex; 
 	private Map<Trip, IloRange> tripVehicleConstraints; 
@@ -81,7 +84,7 @@ public class IntegratedMasterProblem
 	private boolean allowLineChange; 
 	private boolean allowBlockChange; 
 	private int noImprovement;
-	private int iterationLimit; 
+	private int terminationCriteria; 
 	
 	@Getter
 	private Map<Trip, Double> tripVehicleDuals; 
@@ -95,7 +98,7 @@ public class IntegratedMasterProblem
 	private double totalTimeOfMaster; 
 	private double totalTimeOfVehicleSub; 
 	private double totalTimeOfDriverSub; 
-	public IntegratedMasterProblem(List<Trip> trips, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Block, Integer> initialBlocksAndGenerated, Map<Duty, Integer> initialDutiesAndGenerated, boolean earlyTermination, int iterationLimit) throws IloException
+	public IntegratedMasterProblem(List<Trip> trips, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Block, Integer> initialBlocksAndGenerated, Map<Duty, Integer> initialDutiesAndGenerated, boolean earlyTermination, int iterationLimit, int timeLimit) throws IloException
 	{
 		this.trips = trips; 
 		this.deadruns = deadruns; 
@@ -104,13 +107,15 @@ public class IntegratedMasterProblem
 		this.driverGraphs = driverGraphs; 
 		this.initialBlocksAndGenerated = initialBlocksAndGenerated; 
 		this.initialDutiesAndGenerated = initialDutiesAndGenerated; 
+		this.iterationLimit = iterationLimit; 
+		this.timeLimit = timeLimit; 
 	
 		this.earlyTermination = earlyTermination; 
 		this.previousLpObjective = Double.MAX_VALUE; 
 		this.allowLineChange = true; 
-		this.allowBlockChange = false;  
+		this.allowBlockChange = true;   
 		this.noImprovement = 0; 
-		this.iterationLimit = iterationLimit; 
+		this.terminationCriteria = 0; 
 		
 		this.cplex = new IloCplex();
 		this.cplex.addMinimize(); 
@@ -162,9 +167,9 @@ public class IntegratedMasterProblem
 		long start = System.currentTimeMillis(); 
 		this.cplex.setOut(null);
 		//this.cplex.setParam(IloCplex.BooleanParam.PreInd, false);
-		this.cplex.setParam(IloCplex.Param.Parallel, 1);
-		this.cplex.setParam(IloCplex.Param.Threads, 4);
+		this.cplex.setParam(IloCplex.IntParam.Parallel, 1);
 		this.cplex.setParam(IloCplex.Param.RootAlgorithm, IloCplex.Algorithm.Barrier);
+		this.cplex.setParam(IloCplex.Param.Threads, 4);
 		//this.cplex.setParam(IloCplex.IntParam.AdvInd, 2);
 		while(status != 1)
 		{
@@ -216,38 +221,38 @@ public class IntegratedMasterProblem
 					idleTimesDual.replace(idleTime, this.cplex.getDual(this.continousBusAttendanceConstraints.get(idleTime))); 
 				}
 				
-				
-				double change = autoTuneNetworkSize(this.lpObjective);
-				
-				//double change = ((this.previousLpObjective - this.lpObjective)/this.previousLpObjective) * 100.00;
-				System.out.println("Change = " + change);
-				if(change < 0.001 && this.allowBlockChange && this.allowLineChange)
-				{
-					noImprovement++; 
-				}
-				else if(this.allowBlockChange && this.allowLineChange)
-				{
-					this.noImprovement = 0; 
-				}
-				System.out.println("Improvement = " + noImprovement);
-				
-				if(this.noImprovement >= 50 && this.allowBlockChange && this.allowLineChange && this.earlyTermination)
-				{
-					System.out.println("Early termination");
-					status = 1; 
-				}
-				this.previousLpObjective = this.lpObjective; 
-				
+				double change =	autoTuneNetworkSize(this.lpObjective);
+					
 				
 				long end = System.currentTimeMillis(); 
 				double totalTime = (end- start)/1000.00; 
-				int timLim = this.iterationLimit; 
-				
-				if(totalTime > timLim && this.earlyTermination)
+			
+				if(totalTime >= this.timeLimit && this.earlyTermination)
 				{
 					System.out.println("Time limit reached");
 					status = 1; 
 				}
+				
+				/*if(this.earlyTermination && this.allowLineChange && this.allowBlockChange)
+				{
+
+					//double change = ((this.previousLpObjective - this.lpObjective)/this.previousLpObjective) * 100.00;
+					if(change < 0.001)
+					{
+						this.terminationCriteria++;  
+					}
+					else
+					{
+						this.terminationCriteria = 0; 
+					}
+					
+					if(this.terminationCriteria >= this.iterationLimit)
+					{
+						System.out.println("Iteration limit reached");
+						status = 1; 
+					}
+					//this.previousLpObjective = this.lpObjective; 
+				}*/
 				
 			
 				
@@ -273,43 +278,38 @@ public class IntegratedMasterProblem
 		}
 	}
 	
+
+	
 	private double autoTuneNetworkSize(double currentLpObjective)
 	{
 		double change = ((this.previousLpObjective - currentLpObjective)/this.previousLpObjective) * 100.00;
-		
-		if(!this.allowBlockChange || !this.allowLineChange)
+		if(change < 1)
 		{
-			if(change < 1)
-			{
-				noImprovement++; 
-			}
-			else
-			{
-				noImprovement = 0; 
-			}
-			
-			if(noImprovement >= 10)
-			{
-				if(!this.allowBlockChange)
-				{
-					System.out.println("Allow block change");
-					this.allowBlockChange = true; 
-					noImprovement = 0;
-				}
-				else if(!this.allowLineChange)
-				{
-					System.out.println("Allow line change");
-					this.allowLineChange = true; 
-					noImprovement = 0; 
-				}
-			
-			}
+			noImprovement++; 
+		}
+		else
+		{
+			noImprovement = 0; 
 		}
 		
+		if(noImprovement >= 10)
+		{
+			if(!this.allowBlockChange)
+			{
+				System.out.println("Allow block change");
+				this.allowBlockChange = true; 
+				noImprovement = 0;
+			}
+			else if(!this.allowLineChange)
+			{
+				System.out.println("Allow line change");
+				this.allowLineChange = true; 
+				noImprovement = 0; 
+			}
+		}
 		this.previousLpObjective = currentLpObjective; 
 		
 		return change; 
-		
 	}
 	
 	private void getFractionalValues() throws UnknownObjectException, IloException
@@ -418,7 +418,7 @@ public class IntegratedMasterProblem
 		
 		int beforeDeadrunSize = deadrunsGenerated.size(); 
 		int beforeIdleTimeSize = idleTimesGenerated.size(); 
-		double startDriverSub = System.currentTimeMillis(); 
+		double startDriverSub = System.currentTimeMillis();
 		DriverSubproblem driverSubproblem = new DriverSubproblem(iterationNumber, this.driverGraphs, tripsDriverDual, deadrunsLowerLimitDual, deadrunsUpperLimitDual, idleTimesDual, this.trips, this.deadruns, this.idleTimes, this.allowBlockChange, true, true, true); 
 		dutiesGenerated.addAll(driverSubproblem.getDutiesGenerated()); 
 		double endDriverSub = System.currentTimeMillis(); 
@@ -495,6 +495,7 @@ public class IntegratedMasterProblem
 			{
 				status = 1; 
 			}
+			
 		}
 		
 		return status; 

@@ -37,6 +37,7 @@ public class BranchingDecisionIntegrated
 	private Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs;
 	private boolean earlyTermination; 
 	private int iterationLimit; 
+	private int timeLimit; 
 	
 	@Getter
 	private BBNodeIntegrated childNode; 
@@ -52,6 +53,7 @@ public class BranchingDecisionIntegrated
 		this.idleTimesForChildNode = parentNode.getIdleTimes(); 
 		this.earlyTermination = parentNode.isEarlyTermination(); 
 		this.iterationLimit = parentNode.getIterationLimit(); 
+		this.timeLimit = parentNode.getTimeLimit(); 
 
 		mixedVariableFixing(parentNode.getFractionalValuesOfBlocks(), parentNode.getFractionalValuesOfDuties()); 
 		createChildNode(parentNode); 
@@ -97,7 +99,7 @@ public class BranchingDecisionIntegrated
 			duty.resetDutyInMP();
 		}
 		
-		this.childNode = new BBNodeIntegrated(this.blocksForChildNode, this.dutiesForChildNode, this.trips, this.deadrunsForChildNode, this.idleTimesForChildNode, this.vehicleGraphs, this.driverGraphs, this.earlyTermination, this.iterationLimit); 
+		this.childNode = new BBNodeIntegrated(this.blocksForChildNode, this.dutiesForChildNode, this.trips, this.deadrunsForChildNode, this.idleTimesForChildNode, this.vehicleGraphs, this.driverGraphs, this.earlyTermination, this.iterationLimit, this.timeLimit); 
 	}
 	
 	private List<Block> blockVariablesToFix(Map<Block, Double> fractionalValuesOfBlockVariables)

@@ -33,6 +33,7 @@ import Networks.DriverArc;
 import Networks.DriverGraphGeneration;
 import Networks.DriverVertex;
 import Networks.DutyTypeDepot;
+import Networks.GraphCopy;
 import Networks.NeighborhoodGraphGeneration;
 import Networks.VehicleArc;
 import Networks.VehicleGraphGeneration;
@@ -50,29 +51,35 @@ public class App
     public static void main( String[] args) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = /*args[0];*/    "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASSydNord/";
+    	String inputPath = args[0]; //  "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASSydNordSmall2/";
     	ReadInstance rd = new ReadInstance(inputPath); 
     	double d1 = 0.3;  
-    	double d2 = 0.2; 
-    	double d3 = 0.1;
-    	int integratedIterationLimit = 60;  
+    	double d2 = 0.3; 
+    	double d3 = 0.3;
+    	int integratedIterationLimit = 100;  
+    	int integratedTimeLimit = 180; 
+    	int initialAndlocalSearchTimeLimit = 86400; 
     	
-    	/*if(args.length > 1)
+    	if(args.length > 1)
     	{
     		d1 = Double.parseDouble(args[1]);  //0.3; 
         	d2 = Double.parseDouble(args[2]); //0.3; 
         	d3 = Double.parseDouble(args[3]); //0.3; 
-        	integratedIterationLimit = Integer.parseInt(args[4]);  
+        	integratedIterationLimit = Integer.parseInt(args[4]);
+        	integratedTimeLimit = Integer.parseInt(args[5]); 
+        	initialAndlocalSearchTimeLimit = Integer.parseInt(args[6]);
         	System.out.println("Degree of duty destruction = " + d1);
         	System.out.println("Degree of sequential destruction = " + d2);
         	System.out.println("Degree of integrated destruction = " + d3);
-        	System.out.println("Integrated node time limit = " + integratedIterationLimit);
-    	}*/
+        	System.out.println("Integrated node iteration limit = " + integratedIterationLimit);
+        	System.out.println("Integrated node time limit = " + integratedTimeLimit); 
+        	System.out.println("Sequential and Local search time limit = " + initialAndlocalSearchTimeLimit);
+    	}
     	
     	
     	System.out.println("***********************************************");
     	
-    	createGraphs(rd.getAllNodes(), rd.getAllVehicleTypes(), rd.getAllTrips(), rd.getAllVehicleTravels(), rd.getAllDutyTypes(), rd.getAllDriverTravels(), d1, d2, d3, integratedIterationLimit); 
+    	createGraphs(rd.getAllNodes(), rd.getAllVehicleTypes(), rd.getAllTrips(), rd.getAllVehicleTravels(), rd.getAllDutyTypes(), rd.getAllDriverTravels(), d1, d2, d3, integratedIterationLimit, integratedTimeLimit, initialAndlocalSearchTimeLimit); 
     	
     	/*long startTime = System.currentTimeMillis(); 
     	System.out.println("Algorithm....");
@@ -90,7 +97,7 @@ public class App
     }
     
     
-    private static void createGraphs(Set<Node> allNodes, Set<VehicleType> allVehicleTypes, List<Trip> allTrips, Set<VehicleTravel> allVehicleTravels, List<DutyType> allDutyTypes, List<DriverTravel> allDriverTravels, double degreeOfDutyDestruction, double degreeOfSequentialDestruction, double degreeOfIntegratedDestruction, int integratedIterationLimit) throws IloException
+    private static void createGraphs(Set<Node> allNodes, Set<VehicleType> allVehicleTypes, List<Trip> allTrips, Set<VehicleTravel> allVehicleTravels, List<DutyType> allDutyTypes, List<DriverTravel> allDriverTravels, double degreeOfDutyDestruction, double degreeOfSequentialDestruction, double degreeOfIntegratedDestruction, int integratedIterationLimit, int integratedTimeLimit, int localSearchTimeLimit) throws IloException
     {
       	System.out.println("************** Graph Generation ***************");
     	Set<VehicleTypeDepot> allVehicleTypeDepots = new HashSet<VehicleTypeDepot>(); 
@@ -144,14 +151,22 @@ public class App
     	avgDurDeadhead = avgDurDeadhead/(double)allDeadruns.size();
     	System.out.println("Number of idle time = " + allIdleTimes.size());
     	double avgDurIdleTime = 0.0;
+    	double min = Double.MAX_VALUE; 
+    	double max = 0; 
     	for(IdleTime idleTime : allIdleTimes)
     	{
-    		avgDurIdleTime = avgDurIdleTime + (double)(idleTime.getArrivalTime() - idleTime.getDepartureTime()); 
+    		double id = (double)(idleTime.getArrivalTime() - idleTime.getDepartureTime()); 
+    		avgDurIdleTime = avgDurIdleTime + id; 
+    		if(id < min)
+    		{
+    			min = id; 
+    		}
     	}
     	avgDurIdleTime = avgDurIdleTime/(double)allIdleTimes.size(); 
     	System.out.println("Average distance of deadheads in km = " + avgDistDeadhead);
     	System.out.println("Average duration of deadheads in minutes = " + avgDurDeadhead);
     	System.out.println("Average duration of idle times in minutes = " + avgDurIdleTime);
+    	System.out.println("Minimum idle time = " + min);
     	System.out.println("***********************************************");
     	
     	DriverGraphGeneration driverGraphgen = new DriverGraphGeneration(allDutyTypeDepots, allDriverTravels, allNodes, allTrips, allDeadruns, vehicleGraphs); 
@@ -159,17 +174,21 @@ public class App
     	Map<Duty, Integer> dutiesGenerated = new HashMap<Duty, Integer>(); // driverGraphgen.getDutiesGenerated(); 
     	System.out.println("***********************************************");
     	
-    	long startIniLo = System.currentTimeMillis(); 
-    	InitialSolutionController initial = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
-    	long endIniLo = System.currentTimeMillis(); 
-    	System.out.println("Total time for initial and local search = " + (double)(endIniLo - startIniLo)/1000.00);
+    	double startIniLo = System.currentTimeMillis(); 
+    	//InitialSolutionController initial = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
+    	GraphCopy graphCopy = new GraphCopy(vehicleGraphs, driverGraphs, allTrips, allTrips, new HashSet<Deadrun>(), new HashSet<IdleTime>());  
+		Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphCopy = graphCopy.getVehicleGraphsCopy(); 
+		Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphCopy = graphCopy.getDriverGraphsCopy();
+    	SequentialApproach seq = new SequentialApproach(allTrips, vehicleGraphCopy, driverGraphCopy); 
+    	double endIniLo = System.currentTimeMillis(); 
+    	System.out.println("Total time for sequential solution = " + (double)(endIniLo - startIniLo)/1000.00);
     	
-    	long start = System.currentTimeMillis(); 
+    	double start = System.currentTimeMillis(); 
     	
     	//NeighborhoodGraphGeneration neigh = new NeighborhoodGraphGeneration(allDutyTypeDepots,  allDriverTravels, allNodes, allTrips, vehicleGraphs, driverGraphs); 
     	//Master master = new Master(allTrips, allVehicleTravels, neigh.getNeighborhoodGraphs()); 
 
-    	LocalSearch localSearch = new LocalSearch(allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj(), false, 1000, degreeOfDutyDestruction, degreeOfSequentialDestruction, degreeOfIntegratedDestruction, integratedIterationLimit); 
+    	LocalSearch localSearch = new LocalSearch(startIniLo, allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), vehicleGraphs, driverGraphs, seq.getBlocksInSolution(), seq.getDutiesInSolution(), seq.getTotalObjective(), false, 1000, degreeOfDutyDestruction, degreeOfSequentialDestruction, degreeOfIntegratedDestruction, integratedIterationLimit, integratedTimeLimit, localSearchTimeLimit); 
     	//blocksGenerated.addAll(initial.getBlocksInSolution()); 
     	//dutiesGenerated.addAll(initial.getDutiesInSolution()); 
     	Set<Deadrun> deadrunsInSolution = new HashSet<Deadrun>(); 
@@ -185,7 +204,7 @@ public class App
     	
     	//SequentialApproach seq = new SequentialApproach(allTrips, vehicleGraphs, driverGraphs); 
     	//IndependentApproach ind = new IndependentApproach(allTrips, vehicleGraphs, driverGraphs); 
-    	long end = System.currentTimeMillis(); 
+    	double end = System.currentTimeMillis(); 
     	System.out.println("Total time = " + (double)(end-start)/1000.00);
     
     	

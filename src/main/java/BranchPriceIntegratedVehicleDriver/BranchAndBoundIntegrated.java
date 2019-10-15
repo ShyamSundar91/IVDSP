@@ -41,6 +41,7 @@ public class BranchAndBoundIntegrated
 	private Map<Integer, Double> lpObjectivesAtEachNode; 
 	private boolean earlyTermination;
 	private int iterationLimit; 
+	private int timeLimit; 
 	
 	@Getter
 	private List<Block> blocksInSolution; 
@@ -56,13 +57,14 @@ public class BranchAndBoundIntegrated
 	private Map<Deadrun, Double> deadrunDuals;
 	@Getter
 	private Map<IdleTime, Double> idleTimeDuals; 
-	public BranchAndBoundIntegrated(List<Trip> trips, Map<Block, Integer> initialBlocksAndGenerated,  Map<Duty, Integer> initialDutiesAndGenerated, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, boolean earlyTermination, int iterationLimit) throws IloException
+	public BranchAndBoundIntegrated(List<Trip> trips, Map<Block, Integer> initialBlocksAndGenerated,  Map<Duty, Integer> initialDutiesAndGenerated, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, boolean earlyTermination, int iterationLimit, int timeLimit) throws IloException
 	{
 		this.trips = trips; 
 		this.vehicleGraphs = vehicleGraphs; 
 		this.driverGraphs = driverGraphs; 
 		this.earlyTermination = earlyTermination; 
 		this.iterationLimit = iterationLimit; 
+		this.timeLimit = timeLimit; 
 		
 		this.initialBlocksAndGenerated = new HashMap<Block, Integer>(initialBlocksAndGenerated); 
 		this.initialDutiesAndGenerated = new HashMap<Duty, Integer>(initialDutiesAndGenerated); 
@@ -80,7 +82,7 @@ public class BranchAndBoundIntegrated
 	
 	private void createRootNode()
 	{
-		BBNodeIntegrated rootNode = new BBNodeIntegrated(this.initialBlocksAndGenerated, this.initialDutiesAndGenerated, this.trips, this.deadruns, this.idleTimes, this.vehicleGraphs, this.driverGraphs, this.earlyTermination, this.iterationLimit); 
+		BBNodeIntegrated rootNode = new BBNodeIntegrated(this.initialBlocksAndGenerated, this.initialDutiesAndGenerated, this.trips, this.deadruns, this.idleTimes, this.vehicleGraphs, this.driverGraphs, this.earlyTermination, this.iterationLimit, this.timeLimit); 
 		this.nodes.add(rootNode); 
 	}
 	

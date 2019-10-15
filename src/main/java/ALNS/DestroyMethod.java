@@ -84,15 +84,23 @@ public class DestroyMethod
 		
 		this.initalSolutionLocalSearch = initalSolutionLocalSearch; 
 		
+		int maxIter = 500; 
+		if(this.trips.size() > 200)
+		{
+			maxIter = 1000;
+		}
+		double additionalDegree = 0;
+		
+		
 		if(this.initalSolutionLocalSearch)
 		{
 			if(chosenDestroyMethod == 0)
 			{
-				randomRemovalOfDuties();     
+				randomRemovalOfDuties(this.degreeOfDutyDestruction);     
 			}
 			else if(chosenDestroyMethod == 1)
 			{
-				randomRemovalOfBlocks(); 
+				randomRemovalOfBlocks(this.degreeOfSequentialDestruction); 
 			}
 			else 
 			{
@@ -102,33 +110,29 @@ public class DestroyMethod
 		else
 		{
 			if(chosenDestroyMethod == 0)
-			{
-				randomRemovalOfDuties();     
+			{					
+				randomRemovalOfDuties(this.degreeOfDutyDestruction);     
 			}
 			else if(chosenDestroyMethod == 1)
-			{
-				randomRemovalOfBlocks(); 
+			{				
+				randomRemovalOfBlocks(this.degreeOfSequentialDestruction); 
 			}
 			else if(chosenDestroyMethod == 2)
 			{
-				int maxIter = 1000; 
-				double additionalDegree = 0.1; 
-				if(this.trips.size() > 500)
+				if(this.iteration <= maxIter)
 				{
-					maxIter = 2000;
-					additionalDegree = 0.05; 
-				}
-				
-				if(this.iteration <= maxIter || this.noImprovement < 100)
-				{
-					worstRemovalOfDuties(); 
+					worstRemoval(); 
 				}
 				else
 				{
+					if(this.trips.size() < 500)
+					{
+						additionalDegree = 0.05; 
+					}
+					
 					double destruction = this.degreeOfIntegratedDestruction + additionalDegree; 
 					randomRemoval(destruction); 
-				}
-				    
+				}	    
 			}
 		}
 		
@@ -179,24 +183,24 @@ public class DestroyMethod
 	}
 	
 	
-	private void randomRemovalOfDuties()
+	private void randomRemovalOfDuties(double dutyDestruction)
 	{
 		this.dutiesToBeRemoved = new ArrayList<Duty>(); 
 		System.out.println("Number of duties in solution = " + this.dutiesInSolution.size());
-		System.out.println("Degree of destruction = " + this.degreeOfDutyDestruction);
-		int numberOfDutiesToDestroy = Math.max(2, (int)(this.degreeOfDutyDestruction*this.dutiesInSolution.size())); 
+		System.out.println("Degree of destruction = " + dutyDestruction);
+		int numberOfDutiesToDestroy = Math.max(2, (int)(dutyDestruction*this.dutiesInSolution.size())); 
 		Collections.shuffle(this.dutiesInSolution/*, this.rnd*/);
 		this.dutiesToBeRemoved.addAll(this.dutiesInSolution.subList(0, numberOfDutiesToDestroy)); 	
 		
 		this.blocksToBeRemoved = new ArrayList<Block>(); 
 	}
 	
-	private void randomRemovalOfBlocks()
+	private void randomRemovalOfBlocks(double sequentialDestruction)
 	{
 		this.blocksToBeRemoved = new ArrayList<Block>();
 		
-		int numberOfBlocksToRemove = Math.max(2, (int)(this.degreeOfSequentialDestruction*this.blocksInSolution.size())); 
-		System.out.println("Degree of destruction = " + this.degreeOfSequentialDestruction);
+		int numberOfBlocksToRemove = Math.max(2, (int)(sequentialDestruction*this.blocksInSolution.size())); 
+		System.out.println("Degree of destruction = " + sequentialDestruction);
 		Collections.shuffle(this.blocksInSolution/*, this.rnd*/); 
 		this.blocksToBeRemoved.addAll(this.blocksInSolution.subList(0, numberOfBlocksToRemove)); 
 		
@@ -257,7 +261,7 @@ public class DestroyMethod
 		this.dutiesToBeRemoved = removeDutiesBasedOnRemovedBlocks(this.blocksToBeRemoved); 
 	}
 	
-	private void worstRemovalOfDuties()
+	private void worstRemoval()
 	{
 		this.dutiesToBeRemoved = new ArrayList<Duty>(); 
 		System.out.println("Number of duties in solution = " + this.dutiesInSolution.size());

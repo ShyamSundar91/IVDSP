@@ -37,8 +37,9 @@ public class BBNodeIntegrated
 	private double lpObjective; 
 	private boolean earlyTermination; 
 	private int iterationLimit; 
+	private int timeLimit; 
 	
-	public BBNodeIntegrated(Map<Block, Integer> initialBlocksAndGenerated, Map<Duty, Integer> initialDutiesAndGenerated, List<Trip> trips, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, boolean earlyTermination, int iterationLimit)
+	public BBNodeIntegrated(Map<Block, Integer> initialBlocksAndGenerated, Map<Duty, Integer> initialDutiesAndGenerated, List<Trip> trips, Set<Deadrun> deadruns, Set<IdleTime> idleTimes, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, boolean earlyTermination, int iterationLimit, int timeLimit)
 	{
 		this.initialBlocksAndGenerated = initialBlocksAndGenerated; 
 		this.initialDutiesAndGenerated = initialDutiesAndGenerated; 
@@ -49,11 +50,12 @@ public class BBNodeIntegrated
 		this.driverGraphs = driverGraphs; 
 		this.earlyTermination = earlyTermination; 
 		this.iterationLimit = iterationLimit; 
+		this.timeLimit = timeLimit; 
 	}
 	
 	public void solve() throws IloException
 	{
-		IntegratedMasterProblem imp = new IntegratedMasterProblem(this.trips, this.deadruns, this.idleTimes, this.vehicleGraphs, this.driverGraphs, this.initialBlocksAndGenerated, this.initialDutiesAndGenerated, this.earlyTermination, this.iterationLimit);
+		IntegratedMasterProblem imp = new IntegratedMasterProblem(this.trips, this.deadruns, this.idleTimes, this.vehicleGraphs, this.driverGraphs, this.initialBlocksAndGenerated, this.initialDutiesAndGenerated, this.earlyTermination, this.iterationLimit, this.timeLimit);
 		this.fractionalValuesOfBlocks = imp.getFractionalValuesOfBlocks(); 
 		this.fractionalValuesOfDuties = imp.getFractionalValuesOfDuties(); 
 		this.solutionInteger = imp.isSolutionInteger(); 

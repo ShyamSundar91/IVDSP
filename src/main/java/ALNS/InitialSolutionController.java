@@ -92,7 +92,7 @@ public class InitialSolutionController
 		List<List<Integer>> setOfLines = new ArrayList<List<Integer>>(); 
 		List<Integer> subset = new ArrayList<Integer>(); 
 		int max = 1; 
-		/*if(this.lines.size() > 10)
+		/*if(this.lines.size() >= 10)
 		{
 			max = 2; 
 		}*/
@@ -144,7 +144,7 @@ public class InitialSolutionController
 		{
 			iter = 25; 
 		}*/
-		LocalSearch localSearch = new LocalSearch(allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, this.blocksInSolution, this.dutiesInSolution, this.initialSolutionObj, true, iter, 0.3, 0.2, 0.1, 50); 
+		LocalSearch localSearch = new LocalSearch(0, allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, this.blocksInSolution, this.dutiesInSolution, this.initialSolutionObj, true, iter, 0.3, 0.2, 0.1, 50, 60, 86400); 
 		this.blocksInSolution.clear();
 		this.dutiesInSolution.clear();
 		this.blocksInSolution.addAll(localSearch.getBestBlockSolution()); 

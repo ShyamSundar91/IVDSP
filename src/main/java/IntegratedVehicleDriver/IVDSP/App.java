@@ -51,7 +51,7 @@ public class App
     public static void main( String[] args) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = args[0]; //  "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASSydNordSmall2/";
+    	String inputPath = args[0]; //  "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASVestSmall/";
     	ReadInstance rd = new ReadInstance(inputPath); 
     	double d1 = 0.3;  
     	double d2 = 0.3; 

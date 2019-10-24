@@ -104,10 +104,15 @@ public class LocalSearch
 		{
 		
 			System.out.println();
+			boolean count = false; 
+			if(block.getDistance() > block.getVehicleType().getMaximumDistanceWithoutRecharging())
+			{
+				count = true; 
+			}
 			for(BlockActivity ba : block.getBlockActivities())
 			{
 				System.out.println(block.getBlockId() + "; " + ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() + "; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity() + "; " + ba.getTripOrDeadrunId() + "; " + ba.getDistance());
-				if(ba.getActivity().equals("Recharging"))
+				if(ba.getActivity().equals("Recharging") && count)
 				{
 					this.numberOfRecharges++; 
 				}

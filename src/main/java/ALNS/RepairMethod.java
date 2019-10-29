@@ -146,6 +146,7 @@ public class RepairMethod
 		this.objective = this.objective + bb.getObjective(); 
 	}
 	
+	// Have to check this method when the arcs are being removed. Created problems during sensitivity analysis for BAASVest instances.
 	private void repairVehicleAndDriverSequentially() throws IloException
 	{
 		this.deadrunInSolution = new HashSet<Deadrun>(); 

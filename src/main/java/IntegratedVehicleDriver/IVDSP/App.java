@@ -73,7 +73,7 @@ public class App
         	System.out.println("Degree of integrated destruction = " + d3);
         	System.out.println("Integrated node iteration limit = " + integratedIterationLimit);
         	System.out.println("Integrated node time limit = " + integratedTimeLimit); 
-        	System.out.println("Sequential and Local search time limit = " + initialAndlocalSearchTimeLimit);
+        	System.out.println("Initial Line and Local search time limit = " + initialAndlocalSearchTimeLimit);
     	}
     	
     	
@@ -175,20 +175,20 @@ public class App
     	System.out.println("***********************************************");
     	
     	double startIniLo = System.currentTimeMillis(); 
-    	//InitialSolutionController initial = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
-    	GraphCopy graphCopy = new GraphCopy(vehicleGraphs, driverGraphs, allTrips, allTrips, new HashSet<Deadrun>(), new HashSet<IdleTime>());  
+    	InitialSolutionController initial = new InitialSolutionController(allTrips, allVehicleTravels, vehicleGraphs, driverGraphs); 
+    	/*GraphCopy graphCopy = new GraphCopy(vehicleGraphs, driverGraphs, allTrips, allTrips, new HashSet<Deadrun>(), new HashSet<IdleTime>());  
 		Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphCopy = graphCopy.getVehicleGraphsCopy(); 
 		Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphCopy = graphCopy.getDriverGraphsCopy();
-    	SequentialApproach seq = new SequentialApproach(allTrips, vehicleGraphCopy, driverGraphCopy); 
+    	SequentialApproach seq = new SequentialApproach(allTrips, vehicleGraphCopy, driverGraphCopy); */
     	double endIniLo = System.currentTimeMillis(); 
-    	System.out.println("Total time for sequential solution = " + (double)(endIniLo - startIniLo)/1000.00);
+    	System.out.println("Total time for line solution = " + (double)(endIniLo - startIniLo)/1000.00);
     	
     	double start = System.currentTimeMillis(); 
     	
     	//NeighborhoodGraphGeneration neigh = new NeighborhoodGraphGeneration(allDutyTypeDepots,  allDriverTravels, allNodes, allTrips, vehicleGraphs, driverGraphs); 
     	//Master master = new Master(allTrips, allVehicleTravels, neigh.getNeighborhoodGraphs()); 
 
-    	LocalSearch localSearch = new LocalSearch(startIniLo, allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), vehicleGraphs, driverGraphs, seq.getBlocksInSolution(), seq.getDutiesInSolution(), seq.getTotalObjective(), false, 1000, degreeOfDutyDestruction, degreeOfSequentialDestruction, degreeOfIntegratedDestruction, integratedIterationLimit, integratedTimeLimit, localSearchTimeLimit); 
+    	LocalSearch localSearch = new LocalSearch(start, allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), vehicleGraphs, driverGraphs, initial.getBlocksInSolution(), initial.getDutiesInSolution(), initial.getInitialSolutionObj(), false, 1000, degreeOfDutyDestruction, degreeOfSequentialDestruction, degreeOfIntegratedDestruction, integratedIterationLimit, integratedTimeLimit, localSearchTimeLimit); 
     	//blocksGenerated.addAll(initial.getBlocksInSolution()); 
     	//dutiesGenerated.addAll(initial.getDutiesInSolution()); 
     	Set<Deadrun> deadrunsInSolution = new HashSet<Deadrun>(); 

@@ -135,7 +135,7 @@ public class LocalSearch
 	{
 		this.score1 = 25;
 		this.score2 = 0; 
-		this.lambda = 0.1;
+		this.lambda = 0;//0.1;
 		this.noImprovement = 0; 
 		
 		this.maxIterations = maxIterations; 

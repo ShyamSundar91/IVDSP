@@ -136,25 +136,4 @@ public class InitialSolutionController
 			
 		}
 	}
-	
-	private void localSearch() throws IloException
-	{
-		int iter = 25; 
-		/*if(this.allTrips.size() < 500)
-		{
-			iter = 25; 
-		}*/
-		LocalSearch localSearch = new LocalSearch(0, allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(),/* cg.getDeadrunMultipliers(), cg.getIdleTimeMulitpliers(),*/ vehicleGraphs, driverGraphs, this.blocksInSolution, this.dutiesInSolution, this.initialSolutionObj, true, iter, 0.3, 0.2, 0.1, 50, 60, 86400); 
-		this.blocksInSolution.clear();
-		this.dutiesInSolution.clear();
-		this.blocksInSolution.addAll(localSearch.getBestBlockSolution()); 
-		this.dutiesInSolution.addAll(localSearch.getBestDutySolution()); 
-		this.initialSolutionObj = localSearch.getBestObjective(); 
-		System.out.println("After local search Solution = " + this.initialSolutionObj + ", Number of blocks = " + this.blocksInSolution.size() + ", Number of duties = " + this.dutiesInSolution.size());
-	}
-	
-	
-	
-	
-	
 }

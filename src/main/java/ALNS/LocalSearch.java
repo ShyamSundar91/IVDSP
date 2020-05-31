@@ -65,12 +65,12 @@ public class LocalSearch
 	private Map<Integer, List<Double>> weightAtEachIteration; 
 	private Map<Integer, List<Integer>> scoreAtEachIteration; 
 	private Map<Integer, List<Double>> objectiveAtEachIteration;
-	private boolean initalSolutionLocalSearch; 
 	
+	private int[] totalImprovementsProvidedByMethod; 
 	private int[] totalNumberOfTimesMethodChosen; 
 	private double[] totalTimeTakenOfRepairMethods; 
 	private double startTimeOfAlgorithm; 
-	public LocalSearch(double startTimeOfAlgorithm, List<Trip> allTrips, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective, boolean initalSolutionLocalSearch, int maxiterations, 
+	public LocalSearch(double startTimeOfAlgorithm, List<Trip> allTrips, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective, 
 			double degreeOfDutyDestruction, double degreeOfSequentialDestruction, double degreeOfIntegratedDestruction, int integratedIterationLimit, int integratedTimeLimit, int localSearchTimeLimit) throws IloException
 	{
 		this.allTrips = allTrips;  
@@ -92,10 +92,9 @@ public class LocalSearch
 		
 		this.weightAtEachIteration = new HashMap<Integer, List<Double>>(); 
 		this.scoreAtEachIteration = new HashMap<Integer, List<Integer>>(); 
-		this.objectiveAtEachIteration = new HashMap<Integer, List<Double>>(); 
-		this.initalSolutionLocalSearch = initalSolutionLocalSearch; 
+		this.objectiveAtEachIteration = new HashMap<Integer, List<Double>>();
 		
-		initializeParameters(maxiterations); 
+		initializeParameters(); 
 		
 		algorithm(); 
 		
@@ -131,23 +130,18 @@ public class LocalSearch
 		displayKPI(); 
 	}
 	
-	private void initializeParameters(int maxIterations)
+	private void initializeParameters()
 	{
 		this.score1 = 25;
 		this.score2 = 0; 
 		this.lambda = 0.1;
 		this.noImprovement = 0; 
 		
-		this.maxIterations = maxIterations; 
+		this.maxIterations = 0; 
 		this.segmentSize = 25; 
 		
-		int numberOfDestroyMethods = 2;
-		int numberOfRepairMethods = 2; 
-		if(!this.initalSolutionLocalSearch)
-		{
-			numberOfDestroyMethods = 3;
-			numberOfRepairMethods = 3;
-		}
+		int numberOfDestroyMethods = 3;
+		int numberOfRepairMethods = 3; 
 		
 		double initialProbabilities = 1.0/(double)(numberOfDestroyMethods); 
 		this.destroyWeights = new double[numberOfDestroyMethods]; 
@@ -155,6 +149,7 @@ public class LocalSearch
 		this.destroyScoreInSegment = new int[numberOfDestroyMethods]; 
 		this.destoryChosenInSegement = new int[numberOfDestroyMethods]; 
 		
+		this.totalImprovementsProvidedByMethod = new int[numberOfRepairMethods]; 
 		this.totalNumberOfTimesMethodChosen = new int[numberOfRepairMethods]; 
 		this.totalTimeTakenOfRepairMethods = new double[numberOfRepairMethods]; 
 		
@@ -163,6 +158,7 @@ public class LocalSearch
 		Arrays.fill(this.destoryChosenInSegement, 0);
 		Arrays.fill(this.destroyScoreInSegment, 0);
 		
+		Arrays.fill(this.totalImprovementsProvidedByMethod, 0);
 		Arrays.fill(this.totalNumberOfTimesMethodChosen, 0);
 		Arrays.fill(this.totalTimeTakenOfRepairMethods, 0.0);
 	}
@@ -171,8 +167,7 @@ public class LocalSearch
 	{
 		int status = 0; 
 		int i = 1; 
-		double startTime = System.currentTimeMillis(); 
-		//for(int i = 0; i < maxIterations; i++)
+
 		while(status != 1)
 		{
 			this.maxIterations = i;
@@ -181,32 +176,8 @@ public class LocalSearch
 			System.out.println("*****************************************" + " Local search iteration number = " + i + " *****************************************");
 			System.out.println("Selected destroy method = " + selectedDestroyMethod);
 			
-			/*double dutyDestruction = this.degreeOfDutyDestruction; 
-			double sequentialDestruction = this.degreeOfSequentialDestruction; 
-			double integratedDestruction = this.degreeOfIntegratedDestruction; 
-			if(this.allTrips.size() > 500)
-			{
-				if(i < 100)
-				{
-					dutyDestruction = Math.min(0.1, this.degreeOfDutyDestruction); 
-					sequentialDestruction = Math.min(0.1,this.degreeOfSequentialDestruction); 
-					integratedDestruction = Math.min(0.05, this.degreeOfIntegratedDestruction); 
-				}
-				else if( i < 200)
-				{
-					dutyDestruction = Math.min(0.2, this.degreeOfDutyDestruction); 
-					sequentialDestruction = Math.min(0.15,this.degreeOfSequentialDestruction); 
-					integratedDestruction = Math.min(0.075, this.degreeOfIntegratedDestruction); 
-				}
-				else
-				{
-					dutyDestruction = Math.min(0.3, this.degreeOfDutyDestruction); 
-					sequentialDestruction = Math.min(0.2,this.degreeOfSequentialDestruction); 
-					integratedDestruction = Math.min(0.1, this.degreeOfIntegratedDestruction);
-				}
-			}*/
 			
-			DestroyMethod destroy = new DestroyMethod(i, selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, this.bestBlockSolution, this.bestDutySolution, this.initalSolutionLocalSearch, this.degreeOfDutyDestruction, this.degreeOfSequentialDestruction, this.degreeOfIntegratedDestruction, this.noImprovement); 
+			DestroyMethod destroy = new DestroyMethod(i, selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, this.bestBlockSolution, this.bestDutySolution, this.degreeOfDutyDestruction, this.degreeOfSequentialDestruction, this.degreeOfIntegratedDestruction, this.noImprovement); 
 			List<Block> intermediateBlockSolution = destroy.getBlocksInSolution(); 
 			List<Duty> intermediateDutySolution = destroy.getDutiesInSolution();
 			List<Block> blocksRemoved = destroy.getBlocksToBeRemoved(); 
@@ -217,7 +188,7 @@ public class LocalSearch
 			List<Trip> uncoveredTripsOfDriver = destroy.getUncoveredTripsOfDriver(); 
 			
 			double start = System.currentTimeMillis(); 
-			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver, this.initalSolutionLocalSearch, this.integratedIterationLimit, this.integratedTimeLimit); 
+			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver, this.integratedIterationLimit, this.integratedTimeLimit); 
 			double end = System.currentTimeMillis(); 
 			this.totalNumberOfTimesMethodChosen[selectedDestroyMethod] = this.totalNumberOfTimesMethodChosen[selectedDestroyMethod] + 1; 
 			this.totalTimeTakenOfRepairMethods[selectedDestroyMethod] = this.totalTimeTakenOfRepairMethods[selectedDestroyMethod] + (end-start)/(double)(1000); 
@@ -230,6 +201,7 @@ public class LocalSearch
 				System.out.println("Best objective = " + this.bestObjective);
 				scoreInIteration = this.score1;
 				this.noImprovement = 0; 
+				this.totalImprovementsProvidedByMethod[selectedDestroyMethod] = this.totalImprovementsProvidedByMethod[selectedDestroyMethod] + 1; 
 			}
 			else
 			{
@@ -248,17 +220,16 @@ public class LocalSearch
 				resetScores();
 				
 				boolean stop = true;
-				if(!this.initalSolutionLocalSearch)
+				
+				for(int j = 0; j < this.destroyWeights.length; j++)
 				{
-					for(int j = 0; j < this.destroyWeights.length; j++)
+				    if(this.destroyWeights[j] > 0.01)
 					{
-						if(this.destroyWeights[j] > 0.01)
-						{
-							stop = false; 
-							break; 
-						}
+				        stop = false; 
+						break; 
 					}
 				}
+				
 				
 				if(stop)
 				{
@@ -268,10 +239,6 @@ public class LocalSearch
 			
 			kpi(i); 
 			
-			if(this.initalSolutionLocalSearch && i >= 25)
-			{
-				status = 1; 
-			}
 			
 			double endTime = System.currentTimeMillis(); 
 			double totalTime = (endTime - this.startTimeOfAlgorithm)/1000.00; 
@@ -383,10 +350,10 @@ public class LocalSearch
 		
 		System.out.println("Time taken by repair methods...");
 		System.out.println("Total number of iterations performed = " + this.maxIterations);
-		System.out.println("Number of iterations; Number of times selected; Total time; Average time");
+		System.out.println("Number of iterations; Number of times selected; Number of improvements provided; Total time; Average time");
 		for(int i = 0 ; i < this.totalNumberOfTimesMethodChosen.length; i++)
 		{
-			System.out.println(this.totalNumberOfTimesMethodChosen[i] + "; " + this.totalTimeTakenOfRepairMethods[i] + "; " + (this.totalTimeTakenOfRepairMethods[i]/(double)this.totalNumberOfTimesMethodChosen[i]));
+			System.out.println(this.totalNumberOfTimesMethodChosen[i] + "; " + this.totalImprovementsProvidedByMethod[i] + "; "+ this.totalTimeTakenOfRepairMethods[i] + "; " + (this.totalTimeTakenOfRepairMethods[i]/(double)this.totalNumberOfTimesMethodChosen[i]));
 		}
 	}
 

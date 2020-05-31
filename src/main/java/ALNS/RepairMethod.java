@@ -61,11 +61,10 @@ public class RepairMethod
 
 	private Map<Deadrun, Double> deadrunMultipliers;
 	private Map<IdleTime, Double> idleTimeMultipliers; 
-	private boolean initalSolutionLocalSearch; 
 	private int integratedIterationLimit; 
 	private int integratedTimeLimit; 
 	
-	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver, boolean initalSolutionLocalSearch, int integratedIterationLimit, int integratedTimeLimit) throws IloException
+	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver, int integratedIterationLimit, int integratedTimeLimit) throws IloException
 	{
 		this.chosenDestroyMethod = chosenDestroyMethod; 
 		this.allTrips = allTrips;  
@@ -87,36 +86,23 @@ public class RepairMethod
 		this.blocksInSoution = new ArrayList<Block>(); 
 		this.dutiesInSolution = new ArrayList<Duty>(); 
 		this.objective = Double.MAX_VALUE; 
-		this.initalSolutionLocalSearch = initalSolutionLocalSearch; 
 		this.integratedIterationLimit = integratedIterationLimit; 
 		this.integratedTimeLimit = integratedTimeLimit; 
 		
-		if(this.initalSolutionLocalSearch)
+
+		if(this.chosenDestroyMethod == 0)
 		{
-			if(this.chosenDestroyMethod == 0)
-			{
-				repairDriverSchedulingProblem(); 
-			}
-			else if(this.chosenDestroyMethod == 1)
-			{
-				repairVehicleAndDriverSequentially();
-			}
+		    repairDriverSchedulingProblem(); 
 		}
-		else
+		else if(this.chosenDestroyMethod == 1)
 		{
-			if(this.chosenDestroyMethod == 0)
-			{
-				repairDriverSchedulingProblem(); 
-			}
-			else if(this.chosenDestroyMethod == 1)
-			{
-				repairVehicleAndDriverSequentially();
-			}
-			else if(this.chosenDestroyMethod == 2)
-			{
-				repairIntegrated();
-			}
+			repairVehicleAndDriverSequentially();
 		}
+		else if(this.chosenDestroyMethod == 2)
+		{
+			repairIntegrated();
+		}
+		
 		  
 	}
 	
@@ -273,17 +259,6 @@ public class RepairMethod
 		this.objective = bb.getObjective(); 
 		this.blocksInSoution.addAll(bb.getBlocksInSolution()); 
 		this.dutiesInSolution.addAll(bb.getDutiesInSolution()); 
-		/*for(Block block : this.intermediateBlockSolution)
-		{
-			this.objective = this.objective + block.getTotalCostOfBlock(); 
-			this.blocksInSoution.add(block); 
-		}
-		
-		for(Duty duty : this.intermediateDutySolution)
-		{
-			this.objective = this.objective + duty.getTotalCostOfDuty(); 
-			this.dutiesInSolution.add(duty); 
-		}*/
 	}
 	
 	private void createGraphsCopy()

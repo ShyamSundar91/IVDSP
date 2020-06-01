@@ -92,22 +92,22 @@ public class DestroyMethod
 		
 		if(chosenDestroyMethod == 0)
 		{
-		    if(this.iteration <= maxIter)
+		    /*if(this.iteration <= maxIter)
             {
 		        worstRemovalOfDuties(this.degreeOfDutyDestruction);  
             }
-		    else
+		    else*/
 		    {
 		        randomRemovalOfDuties(this.degreeOfDutyDestruction); 
 		    }
 		}
 		else if(chosenDestroyMethod == 1)
 		{
-		    if(this.iteration <= maxIter)
+		    /*if(this.iteration <= maxIter)
 		    {
 		        worstRemovalOfBlocks(this.degreeOfSequentialDestruction); 
 		    }
-		    else
+		    else*/
 		    {
 		        randomRemovalOfBlocks(this.degreeOfSequentialDestruction); 
 		    }
@@ -115,11 +115,11 @@ public class DestroyMethod
 		}
 		else if(chosenDestroyMethod == 2)
 		{
-			if(this.iteration <= maxIter)
+			/*if(this.iteration <= maxIter)
 			{
 			    worstRemovalOfBlocksAndDuties(); 
 			}
-			else
+			else*/
 			{
 				if(this.trips.size() < 500)
 				{

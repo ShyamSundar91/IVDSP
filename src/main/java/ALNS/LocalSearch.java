@@ -350,7 +350,7 @@ public class LocalSearch
 		
 		System.out.println("Time taken by repair methods...");
 		System.out.println("Total number of iterations performed = " + this.maxIterations);
-		System.out.println("Number of iterations; Number of times selected; Number of improvements provided; Total time; Average time");
+		System.out.println("Number of iterations; Number of improvements provided; Total time; Average time");
 		for(int i = 0 ; i < this.totalNumberOfTimesMethodChosen.length; i++)
 		{
 			System.out.println(this.totalNumberOfTimesMethodChosen[i] + "; " + this.totalImprovementsProvidedByMethod[i] + "; "+ this.totalTimeTakenOfRepairMethods[i] + "; " + (this.totalTimeTakenOfRepairMethods[i]/(double)this.totalNumberOfTimesMethodChosen[i]));

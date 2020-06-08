@@ -46,6 +46,8 @@ public class GreedyVehicle {
         
         getUncoveredTrips(); 
         greedy(); 
+        System.out.println("Greedy number of blocks = " + this.blocksInSolution.size());
+        System.out.println("Greedy vehicle objective = " + this.objective);
     }
     
     private void greedy() {
@@ -96,5 +98,4 @@ public class GreedyVehicle {
             }
         }
     }
-
 }

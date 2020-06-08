@@ -18,7 +18,8 @@ public class DriverREF
 	private DriverArc extendingArc; 
 	private int maxNumberOfBlockChanges; 
 	
-	private boolean attendedBus; 
+	private boolean attendedBus;
+	private double updatedTotalCost; 
 	private double updatedReducedCost; 
 	private int updatedTotalDuration; 
 	private int updatedDurationWithoutBreak; 
@@ -40,6 +41,7 @@ public class DriverREF
 		}
 		else
 		{
+		    updatedTotalCost(); 
 			updateAttendedBus(); 
 			updateReducedCost(); 
 			updateTrips(); 
@@ -50,6 +52,7 @@ public class DriverREF
 	
 	private void initialize()
 	{
+	    this.updatedTotalCost = 0; 
 		this.updatedReducedCost = 0.0; 
 		this.updatedTotalDuration = 0; 
 		this.updatedDurationWithoutBreak = 0;
@@ -102,6 +105,11 @@ public class DriverREF
 	private void updateAttendedBus()
 	{
 		this.attendedBus = this.extendingArc.isAttendingBus(); 
+	}
+	
+	private void updatedTotalCost()
+	{
+	    this.updatedTotalCost = this.previousREF.getUpdatedTotalCost() + this.extendingArc.getTotalCostOfArc(); 
 	}
 	
 	private void updateReducedCost()

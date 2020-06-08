@@ -123,7 +123,7 @@ public class RepairMethod
 			initialDuties.put(duty, 0);
 		}
 		
-		/*GreedyDriver greedy = new GreedyDriver(this.allTrips, this.driverGraphs, initialDuties, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution); 
+		/*GreedyDriver greedy = new GreedyDriver(this.allTrips, this.driverGraphsCopy, initialDuties, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution); 
         this.dutiesInSolution.addAll(greedy.getDutiesInSolution());*/
 		BranchAndBoundDriver bb = new BranchAndBoundDriver(this.allTrips, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true); 
 		this.dutiesInSolution.addAll(bb.getDutiesInSolution()); 

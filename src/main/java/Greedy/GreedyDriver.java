@@ -132,12 +132,20 @@ public class GreedyDriver {
                         arcsToRemove.add(arc); 
                     }
                 }
+                
+                
             }
             driverGraph.removeAllEdges(arcsToRemove); 
         
             Set<DriverVertex> verticesToRemove = new HashSet<DriverVertex>(); 
             for(DriverVertex vertex  : driverGraph.vertexSet())
             {
+                if(/*vertex.isDeparture() &&*/ vertex.getTrip() != null && !this.uncoveredTrips.contains(vertex.getTrip())) {
+                    verticesToRemove.add(vertex);
+                }
+                else if(/*vertex.isDeparture() && */ vertex.getDeadrun() != null && !this.uncoveredDeadruns.contains(vertex.getDeadrun())) {
+                    verticesToRemove.add(vertex);
+                }
                 if(driverGraph.incomingEdgesOf(vertex).isEmpty() && driverGraph.outgoingEdgesOf(vertex).isEmpty())
                 {
                     verticesToRemove.add(vertex); 

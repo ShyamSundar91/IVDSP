@@ -111,12 +111,12 @@ public class GreedyDriverController {
                                 else if(successorVertex.getCurrentTime() != Integer.MAX_VALUE)
                                 {
                                     boolean addNewLabel = true; 
-                                    if(successorVertex.getTrip()!= null && successorVertex.isDeparture() && !this.uncoveredTrips.contains(successorVertex.getTrip())) {
+                                   /* if(successorVertex.getTrip()!= null && successorVertex.isDeparture() && !this.uncoveredTrips.contains(successorVertex.getTrip())) {
                                         addNewLabel = false;
                                     }
                                     else if(successorVertex.getDeadrun() != null && successorVertex.isDeparture() && !this.uncoveredDeadruns.contains(successorVertex.getDeadrun())) {
                                         addNewLabel = false; 
-                                    }
+                                    }*/
                                     
                                     if(addNewLabel) {
                                         LabelDriver newLabel = new LabelDriver(selectedLabel, selectedVertex, outgoingArc, newREF); 
@@ -171,8 +171,8 @@ public class GreedyDriverController {
     private void retrievePaths()
     {
         List<LabelDriver> labelsAtSink = new ArrayList<LabelDriver>(this.sinkVertex.getLabels()); 
-        Collections.sort(labelsAtSink);
-        Collections.reverse(labelsAtSink);
+        labelsAtSink.forEach(l -> l.calculateDelta());
+        Collections.sort(labelsAtSink, Comparator.comparingDouble(LabelDriver::getDelta));
         labelsAtSink = labelsAtSink.subList(0, 1); 
         List<DriverArc> driverArcs = new ArrayList<DriverArc>();
         

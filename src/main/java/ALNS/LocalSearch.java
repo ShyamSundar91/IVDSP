@@ -97,7 +97,7 @@ public class LocalSearch
 		initializeParameters(); 
 		
 		algorithm(); 
-		
+	
 		System.out.println("Final Solution...");
 		for(Block block : this.bestBlockSolution)
 		{
@@ -140,8 +140,8 @@ public class LocalSearch
 		this.maxIterations = 0; 
 		this.segmentSize = 25; 
 		
-		int numberOfDestroyMethods = 3;
-		int numberOfRepairMethods = 3; 
+		int numberOfDestroyMethods = 2;
+		int numberOfRepairMethods = 2; 
 		
 		double initialProbabilities = 1.0/(double)(numberOfDestroyMethods); 
 		this.destroyWeights = new double[numberOfDestroyMethods]; 
@@ -318,7 +318,7 @@ public class LocalSearch
 		return selectedDestroyMethod; 
 	}
 	
-	private void displayKPI()
+	private synchronized void displayKPI()
 	{
 		System.out.println("Weights...");
 		for(Integer i : this.weightAtEachIteration.keySet())

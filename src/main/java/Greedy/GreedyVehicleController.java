@@ -59,11 +59,12 @@ public class GreedyVehicleController {
     
     private void algorithm()
     {
-        List<VehicleVertex> currentBestVertices = new ArrayList<VehicleVertex>(); 
+        List<VehicleVertex> currentBestVertices = new ArrayList<VehicleVertex>();  
+        
         while(!this.queue.isEmpty())
         {
-            Collections.sort(this.queue);
-            VehicleVertex selectedVertex = this.queue.get(0); 
+            //Collections.sort(this.queue);
+            VehicleVertex selectedVertex = selectCandidate(this.queue); 
             
             currentBestVertices = new ArrayList<VehicleVertex>();
             
@@ -221,12 +222,30 @@ public class GreedyVehicleController {
             {
                 this.blocksGenerated.add(intblock);
                 
-                for(BlockActivity ba : intblock.getBlockActivities()) {
+                /*for(BlockActivity ba : intblock.getBlockActivities()) {
                     System.out.println(ba.getDepartureNode().getNodeId() + "; " + ba.getArrivalNode().getNodeId() +"; " + ba.getDepartureTime() + "; " + ba.getArrivalTime() + "; " + ba.getActivity());
-                }
+                }*/
             }
             
         }
+    }
+    
+    private VehicleVertex selectCandidate(List<VehicleVertex> vertices)
+    {
+        Collections.sort(vertices);
+        VehicleVertex selectedVertex = vertices.get(0); 
+        
+        for(VehicleVertex vertex : vertices)
+        {
+           int incomingEdges = this.graph.inDegreeOf(vertex); 
+           if(incomingEdges < 3)
+           {
+               selectedVertex = vertex; 
+               break; 
+           }
+        }
+        
+        return selectedVertex; 
     }
     
     private boolean validateBlock(Block intblock)

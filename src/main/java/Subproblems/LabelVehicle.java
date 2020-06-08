@@ -14,6 +14,7 @@ public class LabelVehicle implements Comparable<LabelVehicle>
 	
 	private boolean labelVehicleVisited; 
 	
+	private double delta; 
 	public LabelVehicle(VehicleREF updatedResources, LabelVehicle sourceLabel, VehicleVertex sourceVehicleVertex, VehicleArc extendedVehicleArc)
 	{
 		this.updatedResources = updatedResources; 
@@ -21,8 +22,17 @@ public class LabelVehicle implements Comparable<LabelVehicle>
 		this.sourceVehicleVertex = sourceVehicleVertex; 
 		this.extendedVehicleArc = extendedVehicleArc; 
 		this.labelVehicleVisited = false; 
+		this.delta = Double.MAX_VALUE;
 	}
 	
+	public void calculateDelta()
+	{
+	    if(!this.updatedResources.getUpdatedTrips().isEmpty())
+        {
+            double totalDriving = this.updatedResources.getUpdatedTrips().stream().mapToDouble(t -> t.getDistance()).sum(); 
+            this.delta = this.updatedResources.getUpdatedTotalCost()/totalDriving; 
+        }
+	}
 	public void labelVehicleVisited()
 	{
 		this.labelVehicleVisited = true; 

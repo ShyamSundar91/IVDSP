@@ -17,6 +17,7 @@ public class VehicleREF
 	private VehicleArc extendingArc; 
 	private VehicleVertex succeedingVertex;  
 	
+	private double updatedTotalCost; 
 	private double updatedReducedCost; 
 	private double updatedDistanceWithoutRecharging;
 	private double updatedTotalDistance; 
@@ -35,6 +36,7 @@ public class VehicleREF
 		}
 		else
 		{
+		    updateTotalCost();
 			updateReducedCost(); 
 			updateTrips(); 
 			updatedTotalDistance(); 
@@ -43,6 +45,7 @@ public class VehicleREF
 	
 	private void initialize()
 	{
+	    this.updatedTotalCost = 0; 
 		this.updatedReducedCost = 0; 
 		this.updatedTotalDistance = 0; 
 		this.updatedDistanceWithoutRecharging = 0; 
@@ -50,6 +53,10 @@ public class VehicleREF
 
 	}
 	
+	private void updateTotalCost()
+	{
+	    this.updatedTotalCost = this.previousREF.getUpdatedTotalCost() + this.extendingArc.getTotalCostOfArc() + this.succeedingVertex.getTotalCostOfVertex(); 
+	}
 	private void updateReducedCost()
 	{
 		this.updatedReducedCost = this.previousREF.getUpdatedReducedCost() + this.extendingArc.getReducedCostOfArc() + this.succeedingVertex.getReducedCost(); 

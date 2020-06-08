@@ -51,11 +51,11 @@ public class App
     public static void main( String[] args) throws FileNotFoundException, IOException, IloException
     {
     	System.out.println("*************** Read Instance *****************");
-    	String inputPath = args[0]; // "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASVestSmall/";
+    	String inputPath = /*args[0];*/  "/Users/ShyamSundar/Desktop/IntegratedVehicleAndDriver/Data/BAASVestMedium/";
     	ReadInstance rd = new ReadInstance(inputPath); 
     	double d1 = 0.3;  
     	double d2 = 0.3; 
-    	double d3 = 0.3;
+    	double d3 = 0.25;
     	int integratedIterationLimit = 100;  
     	int integratedTimeLimit = 180; 
     	int initialAndlocalSearchTimeLimit = 86400; 

@@ -13,6 +13,8 @@ import BranchPriceDriver.BBNodeDriver;
 import BranchPriceDriver.BranchAndBoundDriver;
 import BranchPriceVehicle.BranchAndBoundVehicle;
 import Data.Trip;
+import Greedy.GreedyDriver;
+import Greedy.GreedyVehicle;
 import Networks.DriverArc;
 import Networks.DriverVertex;
 import Networks.DutyTypeDepot;
@@ -90,6 +92,11 @@ public class SequentialApproach
 	
 	private void vehicleSchedulingProblem() throws IloException
 	{
+	    /*GreedyVehicle greedy = new GreedyVehicle(this.allTrips, this.vehicleGraphs, new HashMap<Block, Integer>()); 
+	    this.blocksInSolution = greedy.getBlocksInSolution(); 
+        this.deadrunsInSolution = new HashSet<Deadrun>(greedy.getDeadrunsInSolution()); 
+        this.idleTimesInSolution = new HashSet<IdleTime>(greedy.getIdleTimesInSolution()); */
+        
 		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphs, new HashMap<Block, Integer>(), new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), false);
 		this.blocksInSolution = bbVehicle.getBlocksInSolution();
 		this.deadrunsInSolution = new HashSet<Deadrun>(bbVehicle.getDeadrunsInSolution()); 
@@ -122,6 +129,8 @@ public class SequentialApproach
 			graph.removeAllEdges(arcsToRemove); 
 		}
 		
+		/*GreedyDriver greedy = new GreedyDriver(this.allTrips, this.driverGraphs, new HashMap<Duty, Integer>(), this.blocksInSolution, this.deadrunsInSolution, this.idleTimesInSolution); 
+		this.dutiesInSolution = greedy.getDutiesInSolution(); */
 		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSolution, this.deadrunsInSolution, this.idleTimesInSolution, this.driverGraphs, new HashMap<Duty, Integer>(), false);  
 		this.dutiesInSolution = dsp.getDutiesInSolution(); 
 		this.nodesDriver = dsp.getNodeNo(); 

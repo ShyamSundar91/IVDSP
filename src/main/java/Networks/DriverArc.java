@@ -1,6 +1,7 @@
 package Networks;
 
 
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,7 +36,8 @@ public class DriverArc implements Comparable<DriverArc>
 	private double reducedCostOfArc; 
 	private double totalCostOfArc; 
 	
-	public DriverArc(DutyType dutyType, DriverVertex predecessorVertex, DriverVertex successorVertex, Trip trip, Deadrun deadrun, List<DutyActivity> dutyActivities, IdleTime idleTimeOnArc, boolean attendingBus, boolean changingBus) 
+	private double delta; 
+	public DriverArc(DutyType dutyType, DriverVertex predecessorVertex, DriverVertex successorVertex, Trip trip, Deadrun deadrun, List<DutyActivity> dutyActivities, IdleTime idleTimeOnArc, boolean attendingBus, boolean changingBus)  
 	{
 		this.dutyType = dutyType; 
 		this.predecessorVertex = predecessorVertex; 
@@ -63,6 +65,11 @@ public class DriverArc implements Comparable<DriverArc>
 		if(this.predecessorVertex.getCurrentTime() == -1)
 		{
 			this.totalCostOfArc = this.totalCostOfArc + this.dutyType.getFixedCost(); 
+		}
+		
+		this.delta = this.totalCostOfArc; 
+		if(this.trip != null || this.deadrun != null || this.idleTimeOnArc != null) {
+		    this.delta = this.delta - 1000; 
 		}
 	}
 	
@@ -108,6 +115,7 @@ public class DriverArc implements Comparable<DriverArc>
 		}
 		
 	}
+	
 
 	@Override
 	public int compareTo(DriverArc o) 

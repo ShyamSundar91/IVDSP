@@ -10,7 +10,7 @@ import Variables.Deadrun;
 import lombok.Getter;
 
 @Getter
-public class DriverVertex 
+public class DriverVertex implements Comparable<DriverVertex> 
 {
 	private Node currentNode; 
 	private int currentTime; 
@@ -20,6 +20,7 @@ public class DriverVertex
 	private double reducedCostOfVertex; 
 	private List<LabelDriver> labels; 
 	
+	private double cost; 
 	public DriverVertex(Node currentNode, int currentTime, Trip trip, Deadrun deadrun, boolean departure)
 	{
 		this.currentNode = currentNode; 
@@ -30,6 +31,19 @@ public class DriverVertex
 		this.reducedCostOfVertex = 0.0; 
 		
 		this.labels = new ArrayList<LabelDriver>(); 
+		
+		this.cost = currentTime; 
+		if((this.trip != null || this.deadrun != null)) {
+		    this.cost = this.cost - 1000; 
+		}
 	}
+	
+	public int compareTo(DriverVertex dv) {
+        
+        if(this.cost < dv.getCost()) return -1; 
+        if(this.cost > dv.getCost()) return 1; 
+        
+        return 0;
+    }
 
 }

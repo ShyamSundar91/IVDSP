@@ -17,6 +17,8 @@ import BranchPriceVehicle.BranchAndBoundVehicle;
 import Data.DriverTravel;
 import Data.Node;
 import Data.Trip;
+import Greedy.GreedyDriver;
+import Greedy.GreedyVehicle;
 import Networks.DriverArc;
 import Networks.DriverVertex;
 import Networks.DutyTypeDepot;
@@ -121,6 +123,8 @@ public class RepairMethod
 			initialDuties.put(duty, 0);
 		}
 		
+		/*GreedyDriver greedy = new GreedyDriver(this.allTrips, this.driverGraphs, initialDuties, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution); 
+        this.dutiesInSolution.addAll(greedy.getDutiesInSolution());*/
 		BranchAndBoundDriver bb = new BranchAndBoundDriver(this.allTrips, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true); 
 		this.dutiesInSolution.addAll(bb.getDutiesInSolution()); 
 		this.blocksInSoution.addAll(this.intermediateBlockSolution); 
@@ -129,6 +133,7 @@ public class RepairMethod
 		{
 			this.objective = this.objective + block.getTotalCostOfBlock(); 
 		}
+		//this.objective = this.objective + greedy.getObjective(); 
 		this.objective = this.objective + bb.getObjective(); 
 	}
 	
@@ -153,10 +158,14 @@ public class RepairMethod
 		
 		
 		this.objective = 0; 
-		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks, this.deadrunMultipliers, this.idleTimeMultipliers, true);
+		GreedyVehicle greedy = new GreedyVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks); 
+        this.blocksInSoution.addAll(greedy.getBlocksInSolution()); 
+        this.deadrunInSolution.addAll(greedy.getDeadrunsInSolution()); 
+        this.idleTimeInSolution.addAll(greedy.getIdleTimesInSolution()); 
+		/*BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks, this.deadrunMultipliers, this.idleTimeMultipliers, true);
 		this.blocksInSoution.addAll(bbVehicle.getBlocksInSolution()); 
 		this.deadrunInSolution.addAll(bbVehicle.getDeadrunsInSolution()); 
-		this.idleTimeInSolution.addAll(bbVehicle.getIdleTimesInSolution()); 
+		this.idleTimeInSolution.addAll(bbVehicle.getIdleTimesInSolution()); */
 		for(Block block : this.blocksInSoution)
 		{
 			this.objective = this.objective + block.getTotalCostOfBlock(); 

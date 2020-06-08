@@ -115,11 +115,11 @@ public class DestroyMethod
 		}
 		else if(chosenDestroyMethod == 2)
 		{
-			/*if(this.iteration <= maxIter)
+			if(this.iteration <= maxIter)
 			{
 			    worstRemovalOfBlocksAndDuties(); 
 			}
-			else*/
+			else
 			{
 				if(this.trips.size() < 500)
 				{

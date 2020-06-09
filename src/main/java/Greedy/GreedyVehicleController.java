@@ -135,7 +135,7 @@ public class GreedyVehicleController {
         List<LabelVehicle> labelsAtSink = new ArrayList<LabelVehicle>(this.sinkVertex.getLabels()); 
         labelsAtSink.forEach(l -> l.calculateDelta());
         Collections.sort(labelsAtSink, Comparator.comparingDouble(LabelVehicle::getDelta));
-       // Collections.reverse(labelsAtSink);
+        Collections.reverse(labelsAtSink);
         labelsAtSink = labelsAtSink.subList(0, 1); 
        
         List<VehicleVertex> vehicleVertices = new ArrayList<VehicleVertex>();

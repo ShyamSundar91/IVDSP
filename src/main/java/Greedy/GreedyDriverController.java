@@ -4,19 +4,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.junit.Assert;
 
+import Data.DutyType;
 import Data.Trip;
-import Networks.DriverArc;
-import Networks.DriverVertex;
-import Networks.DutyTypeDepot;
-import Subproblems.DriverREF;
-import Subproblems.LabelDriver;
 import Variables.Deadrun;
 import Variables.Duty;
 import Variables.DutyActivity;
@@ -25,131 +20,94 @@ import lombok.Getter;
 
 public class GreedyDriverController {
     
-    private DutyTypeDepot dutyTypeDepot; 
-    private DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph; 
-    
-    private List<Trip> uncoveredTrips; 
-    private Set<Deadrun> uncoveredDeadruns; 
-    private Set<IdleTime> uncoveredIdleTimes;
-    
-    private DriverVertex sourceVertex; 
-    private DriverVertex sinkVertex; 
-    private List<DriverVertex> queue; 
-    
+    private DutyType dutyType; 
+    private DefaultDirectedGraph<GreedyDriverVertex, GreedyDriverArc> graph; 
     @Getter
     private List<Duty> dutiesGenerated; 
- 
-    public GreedyDriverController(DutyTypeDepot dutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc> driverGraph, List<Trip> uncoveredTrips, Set<Deadrun> uncoveredDeadruns, Set<IdleTime> uncoveredIdleTimes) {
-        this.dutyTypeDepot = dutyTypeDepot; 
-        this.driverGraph = driverGraph; 
+    
+    private GreedyDriverVertex sourceVertex; 
+    private GreedyDriverVertex sinkVertex; 
+    
+    private List<GreedyDriverVertex> queue;
+    
+    public GreedyDriverController(DutyType dutyType, DefaultDirectedGraph<GreedyDriverVertex, GreedyDriverArc> graph) {
+        this.dutyType = dutyType; 
+        this.graph = graph; 
+        this.dutiesGenerated = new ArrayList<>(); 
         
-        this.uncoveredDeadruns = uncoveredDeadruns; 
-        this.uncoveredIdleTimes = uncoveredIdleTimes; 
-        this.uncoveredTrips = uncoveredTrips; 
-        
-        this.sourceVertex = this.driverGraph.vertexSet().stream().filter(v -> v.getCurrentTime() == -1).findFirst().get(); 
-        this.sinkVertex = this.driverGraph.vertexSet().stream().filter(v -> v.getCurrentTime() == Integer.MAX_VALUE).findFirst().get(); 
-        this.queue = new ArrayList<DriverVertex>();
-        this.dutiesGenerated = new ArrayList<Duty>(); 
+        this.queue = new ArrayList<>(); 
+        this.sourceVertex = this.graph.vertexSet().stream().filter(v -> v.getVertexID() == -1).collect(Collectors.toList()).get(0); 
+        this.sinkVertex = this.graph.vertexSet().stream().filter(v -> v.getVertexID() == Integer.MAX_VALUE).collect(Collectors.toList()).get(0); 
         
         initialization();
-        algorithm();
+       
+        algorithm(); 
     }
     
     private void initialization()
     {
-        DriverREF initialREF = new DriverREF(this.dutyTypeDepot.getDutyType(), null, null, this.dutyTypeDepot.getDutyType().getMaximumNumberOfBlockChanges()); 
-        LabelDriver initialLabel = new LabelDriver(null, null, null, initialREF);
+        GreedyDriverREF initialREF = new GreedyDriverREF(this.dutyType, null, null, null); 
+        GreedyLabelDriver initialLabel = new GreedyLabelDriver(null, null, null, initialREF); 
         this.sourceVertex.getLabels().add(initialLabel); 
-        this.queue.add(this.sourceVertex); 
+        this.queue.add(sourceVertex); 
     }
     
     private void algorithm()
     {
-        List<DriverVertex> currentBestVertices = new ArrayList<DriverVertex>(); 
+        List<GreedyDriverVertex> currentBestVertices = new ArrayList<GreedyDriverVertex>();  
+        
         while(!this.queue.isEmpty())
         {
-            DriverVertex selectedVertex = null; 
+            //Collections.sort(this.queue);
+            GreedyDriverVertex selectedVertex = selectCandidate(this.queue); 
             
-            Collections.sort(this.queue);
-            selectedVertex = this.queue.get(0); 
-                
-            currentBestVertices = new ArrayList<DriverVertex>(); 
+            currentBestVertices = new ArrayList<>();
             
-            Set<DriverArc> outgoingArcs = this.driverGraph.outgoingEdgesOf(selectedVertex); 
+            Set<GreedyDriverArc> outgoingArcs = this.graph.outgoingEdgesOf(selectedVertex).stream().collect(Collectors.toSet()); 
             
-            List<LabelDriver> labels = selectedVertex.getLabels(); 
-            for(LabelDriver selectedLabel : labels)
+            for(GreedyLabelDriver label : selectedVertex.getLabels())
             {
-                if(!selectedLabel.isLabelDriverVisited())
+                if(!label.isLabelDriverVisited())
                 {
-                    
-                    for(DriverArc outgoingArc : outgoingArcs)
+                    for(GreedyDriverArc outgoingArc : outgoingArcs)
                     {
-                        boolean checkArc = true; 
-                        if(!selectedLabel.getUpdatedResources().isAttendedBus() && !outgoingArc.isAttendingBus()) {
-                            checkArc = false;
-                        }
                         
-                        if(checkArc) {
-                            DriverVertex successorVertex = outgoingArc.getSuccessorVertex(); 
-                            
-                            DriverREF newREF = new DriverREF(this.dutyTypeDepot.getDutyType(), selectedLabel.getUpdatedResources(), outgoingArc, this.dutyTypeDepot.getDutyType().getMaximumNumberOfBlockChanges()); 
-                            
-                            if(newREF.isValid())
+                        GreedyDriverVertex successorVertex = outgoingArc.getSuccessor(); 
+                         
+                        GreedyDriverREF newREF = new GreedyDriverREF(this.dutyType, label.getUpdatedResources(), outgoingArc, successorVertex);  
+                        if(newREF.isValid())
+                        {
+                            if(successorVertex.getVertexID() == Integer.MAX_VALUE)
                             {
-                                
-                                if(successorVertex.getCurrentTime() == Integer.MAX_VALUE)
-                                {
-                                    LabelDriver newLabel = new LabelDriver(selectedLabel, selectedVertex, outgoingArc, newREF); 
-                                    if(!newLabel.getUpdatedResources().getUpdatedTrips().isEmpty()) {
-                                        successorVertex.getLabels().add(newLabel); 
-                                        //foundDuty = true;
-                                    }
+                                GreedyLabelDriver newLabel = new GreedyLabelDriver(label, selectedVertex, outgoingArc, newREF);
+                                successorVertex.getLabels().add(newLabel); 
+                                       
+                            }
+                            else if(successorVertex.getVertexID() != Integer.MAX_VALUE)
+                            {
+                                GreedyLabelDriver newLabel = new GreedyLabelDriver(label, selectedVertex, outgoingArc, newREF);
+                                successorVertex.getLabels().add(newLabel); 
                                     
-                                }
-                                else if(successorVertex.getCurrentTime() != Integer.MAX_VALUE)
+                                if(!currentBestVertices.contains(successorVertex))
                                 {
-                                    boolean addNewLabel = true; 
-                                   /* if(successorVertex.getTrip()!= null && successorVertex.isDeparture() && !this.uncoveredTrips.contains(successorVertex.getTrip())) {
-                                        addNewLabel = false;
-                                    }
-                                    else if(successorVertex.getDeadrun() != null && successorVertex.isDeparture() && !this.uncoveredDeadruns.contains(successorVertex.getDeadrun())) {
-                                        addNewLabel = false; 
-                                    }*/
-                                    
-                                    if(addNewLabel) {
-                                        LabelDriver newLabel = new LabelDriver(selectedLabel, selectedVertex, outgoingArc, newREF); 
-                                        successorVertex.getLabels().add(newLabel); 
-                                        
-                                        if(!currentBestVertices.contains(successorVertex))
-                                        {
-                                            currentBestVertices.add(successorVertex); 
-                                        }
-                                        
-                                        
-                                    }
-                                   
-                                 
+                                    currentBestVertices.add(successorVertex); 
                                 }
-                                
                             }
                         }
-                        
-                        
                     }
-                    selectedLabel.labelDriverVisited();
                 }
                     
+                label.labelDriverVisited();
             }
+        
             this.queue.remove(selectedVertex); 
             
             if(!currentBestVertices.isEmpty()) {
                 
-                for(DriverVertex vertex : this.queue)
+                for(GreedyDriverVertex vertex : this.queue)
                 {
-                    List<LabelDriver> labelsToRemove = new ArrayList<>(); 
-                    for(LabelDriver label : vertex.getLabels()) {
+                    List<GreedyLabelDriver> labelsToRemove = new ArrayList<>(); 
+                    for(GreedyLabelDriver label : vertex.getLabels()) {
                         
                        if(!label.getSourceDriverVertex().equals(selectedVertex)) {
                            
@@ -162,39 +120,61 @@ public class GreedyDriverController {
                 
                 this.queue.addAll(currentBestVertices); 
             }
-    
         }
         
-        retrievePaths(); 
+        reterievePaths(); 
     }
     
-    private void retrievePaths()
+    private void reterievePaths()
     {
-        List<LabelDriver> labelsAtSink = new ArrayList<LabelDriver>(this.sinkVertex.getLabels()); 
+        List<GreedyLabelDriver> labelsAtSink = new ArrayList<>(this.sinkVertex.getLabels()); 
         labelsAtSink.forEach(l -> l.calculateDelta());
-        Collections.sort(labelsAtSink, Comparator.comparingDouble(LabelDriver::getDelta));
+        Collections.sort(labelsAtSink, Comparator.comparingDouble(GreedyLabelDriver::getDelta));
+        Collections.reverse(labelsAtSink);
         labelsAtSink = labelsAtSink.subList(0, 1); 
-        List<DriverArc> driverArcs = new ArrayList<DriverArc>();
+       
+        List<GreedyDriverVertex> driverVertices = new ArrayList<>();
+        List<GreedyDriverArc> driverArcs = new ArrayList<>(); 
         
-        for(LabelDriver finalLabel : labelsAtSink)
+        for(GreedyLabelDriver finalLabel : labelsAtSink)
         {
             boolean stop = false; 
-            LabelDriver currentLabel = finalLabel;
-
-            driverArcs = new ArrayList<DriverArc>();
-            
+            double totalCost = 0.0; 
+            GreedyLabelDriver currentLabel = finalLabel;
+            driverVertices = new ArrayList<>(); 
+            driverArcs = new ArrayList<>();
+            GreedyDriverVertex currentVertex = sinkVertex; 
             while(!stop)
             {
-    
-                LabelDriver previousLabel = currentLabel.getSourceLabel(); 
-                DriverVertex previousVertex = currentLabel.getSourceDriverVertex();  
+                if(currentVertex.getTrip() != null)
+                {
+                    driverVertices.add(currentVertex); 
+                    totalCost = totalCost + currentVertex.getTotalCostOfVertex(); 
+                }
+                
+                if(currentVertex.getDeadrun() != null)
+                {
+                    driverVertices.add(currentVertex); 
+                    totalCost = totalCost + currentVertex.getTotalCostOfVertex(); 
+                }
+                
+                if(currentVertex.getIdleTime() != null)
+                {
+                    driverVertices.add(currentVertex); 
+                    totalCost = totalCost + currentVertex.getTotalCostOfVertex();
+                }
+                
+                GreedyLabelDriver previousLabel = currentLabel.getSourceLabel(); 
+                GreedyDriverVertex previousVertex = currentLabel.getSourceDriverVertex(); 
                 
                 if(previousLabel != null && previousVertex != null)
                 {
-                    DriverArc curretnArc = currentLabel.getExtendingDriverArc(); 
-                    driverArcs.add(curretnArc); 
+                    GreedyDriverArc currentArc = currentLabel.getExtendingDriverArc(); 
+                    driverArcs.add(currentArc); 
+                    totalCost = totalCost + currentArc.getTotalCostOfArc(); 
                     
-                    currentLabel = previousLabel;  
+                    currentLabel = previousLabel; 
+                    currentVertex = previousVertex; 
                 }
                 else
                 {
@@ -203,54 +183,76 @@ public class GreedyDriverController {
                 
             }
             
-            List<DutyActivity> dutyActivities = new ArrayList<DutyActivity>(); 
+            
             List<Trip> trips = new ArrayList<Trip>(); 
-            List<Deadrun> deadruns = new ArrayList<Deadrun>(); 
+            List<DutyActivity> dutyActivities = new ArrayList<>(); 
+            List<Deadrun> deadruns = new ArrayList<Deadrun>();
             List<IdleTime> idleTimes = new ArrayList<IdleTime>(); 
-            double totalCost = 0.0; 
-            for(DriverArc arc : driverArcs)
-            {
-                totalCost = totalCost + arc.getTotalCostOfArc(); 
-                if(!arc.getDutyActivities().isEmpty())
-                {
-                    dutyActivities.addAll(arc.getDutyActivities()); 
+            driverVertices.forEach(v -> {
+                  if(v.getTrip() != null)
+                  {
+                      trips.add(v.getTrip()); 
+                      dutyActivities.add(v.getDutyActivity()); 
+                  }
+                  
+                  if(v.getDeadrun() != null)
+                  {
+                      deadruns.add(v.getDeadrun()); 
+                      dutyActivities.add(v.getDutyActivity());
+                  }
+                  
+                  if(v.getIdleTime() != null)
+                  {
+                      idleTimes.add(v.getIdleTime()); 
+                      dutyActivities.add(v.getDutyActivity()); 
+                  }
+            });
+            
+            Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedTrips().containsAll(trips));
+            Assert.assertTrue(trips.containsAll(finalLabel.getUpdatedResources().getUpdatedTrips()));
+            
+             
+            driverArcs.forEach(a -> {
+                if(!a.getDutyActivities().isEmpty()) {
+                    dutyActivities.addAll(a.getDutyActivities()); 
                 }
-                
-                if(arc.getTrip() != null)
-                {
-                    trips.add(arc.getTrip()); 
-                }
-                
-                if(arc.getDeadrun() != null)
-                {
-                    deadruns.add(arc.getDeadrun()); 
-                }
-                
-                if(arc.getIdleTimeOnArc() != null)
-                {
-                    idleTimes.add(arc.getIdleTimeOnArc()); 
-                }
-            }
-              
-            for(IdleTime idleTime : idleTimes)
-            {
-                Optional<DutyActivity> idleActivity = dutyActivities.stream().filter(b -> (b.getDepartureNode().equals(idleTime.getNode()) && b.getArrivalNode().equals(idleTime.getNode()) && b.getDepartureTime() == idleTime.getDepartureTime() && b.getArrivalTime() == idleTime.getArrivalTime()) && (b.getActivity().equals("Break") || b.getActivity().equals("Duty regulation"))).findFirst();
-                Assert.assertTrue(idleActivity.isPresent());
-            }
+            });
             
             Collections.sort(dutyActivities);
-            Duty duty = new Duty(this.dutyTypeDepot.getDutyType(), trips, deadruns, dutyActivities, idleTimes); 
+            
+            Duty duty = new Duty(this.dutyType, trips, deadruns, dutyActivities, idleTimes); 
             this.dutiesGenerated.add(duty); 
-            Assert.assertTrue((trips.isEmpty() && !deadruns.isEmpty()) || (!trips.isEmpty() && deadruns.isEmpty()) || (!trips.isEmpty() && !deadruns.isEmpty()));
+            /*for(DutyActivity da : duty.getDutyActivities())
+            {
+                System.out.println(da.getDepartureNode().getNodeId() + "; " + da.getArrivalNode().getNodeId() +"; " + da.getDepartureTime() + "; " + da.getArrivalTime() + "; " + da.getActivity());
+            }*/
+            //Assert.assertTrue((trips.isEmpty() && !deadruns.isEmpty()) || (!trips.isEmpty() && deadruns.isEmpty()) || (!trips.isEmpty() && !deadruns.isEmpty()));
             Assert.assertTrue(duty.getTotalDuration() == finalLabel.getUpdatedResources().getUpdatedTotalDuration());
             Assert.assertTrue(Math.abs(duty.getTotalCostOfDuty()-totalCost) <= 1e-6);
-            for(DutyActivity dutyActivity : duty.getDutyActivities())
-            {
-                System.out.println(dutyActivity.getDepartureNode().getNodeId() + "; " + dutyActivity.getArrivalNode().getNodeId() + "; " + dutyActivity.getDepartureTime() + "; " + dutyActivity.getArrivalTime() + "; " + dutyActivity.getActivity());
-            }
-
-            validateDuty(duty); 
+            //Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedTrips().containsAll(duty.getTripsInDuty()) && duty.getTripsInDuty().containsAll(finalLabel.getUpdatedResources().getUpdatedTrips()));
+            //Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedDeadruns().containsAll(duty.getDeadrunsInDuty()) && duty.getDeadrunsInDuty().containsAll(finalLabel.getUpdatedResources().getUpdatedDeadruns()));
+            //Assert.assertTrue(finalLabel.getUpdatedResources().getUpdatedIdleTimes().containsAll(duty.getIdleTimesInDuty()) && duty.getIdleTimesInDuty().containsAll(finalLabel.getUpdatedResources().getUpdatedIdleTimes()));
+            validateDuty(duty);
+            
         }
+    }
+    
+    private GreedyDriverVertex selectCandidate(List<GreedyDriverVertex> vertices)
+    {
+        Collections.sort(vertices);
+        GreedyDriverVertex selectedVertex = vertices.get(0); 
+     
+        for(GreedyDriverVertex vertex : vertices)
+        {
+           int incomingEdges = this.graph.inDegreeOf(vertex); 
+           if(incomingEdges < 3)
+           {
+               selectedVertex = vertex; 
+               break; 
+           }
+        }
+        
+        return selectedVertex; 
     }
     
     private boolean validateDuty(Duty intDuty)
@@ -267,7 +269,7 @@ public class GreedyDriverController {
                 durationToBreak = durationToBreak + dutyActivity.getDuration(); 
             }
             
-            if(this.dutyTypeDepot.getDutyType().getMaximumDurationWithoutBreak() > 0 && durationToBreak > this.dutyTypeDepot.getDutyType().getMaximumDurationWithoutBreak())
+            if(this.dutyType.getMaximumDurationWithoutBreak() > 0 && durationToBreak > this.dutyType.getMaximumDurationWithoutBreak())
             {
                 System.out.println("Duty invlaid because of maximum duration without break");
                 throw new IllegalArgumentException();
@@ -275,7 +277,7 @@ public class GreedyDriverController {
             }
         }
         
-        if(intDuty.getTotalDuration() > this.dutyTypeDepot.getDutyType().getMaxDuration())
+        if(intDuty.getTotalDuration() > this.dutyType.getMaxDuration())
         {
             System.out.println("Duty invlaid because of maximum duration");
             throw new IllegalArgumentException();

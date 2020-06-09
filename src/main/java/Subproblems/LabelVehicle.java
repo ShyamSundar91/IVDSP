@@ -27,11 +27,7 @@ public class LabelVehicle implements Comparable<LabelVehicle>
 	
 	public void calculateDelta()
 	{
-	    if(!this.updatedResources.getUpdatedTrips().isEmpty())
-        {
-            double totalDriving = this.updatedResources.getUpdatedTrips().stream().mapToDouble(t -> t.getDistance()).sum(); 
-            this.delta = this.updatedResources.getUpdatedTotalCost()/totalDriving; 
-        }
+	    this.delta = this.updatedResources.getUpdatedTotalDistance(); 
 	}
 	public void labelVehicleVisited()
 	{

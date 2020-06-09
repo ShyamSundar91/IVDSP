@@ -70,10 +70,16 @@ public class LocalSearch
 	private int[] totalNumberOfTimesMethodChosen; 
 	private double[] totalTimeTakenOfRepairMethods; 
 	private double startTimeOfAlgorithm; 
+	
+	 private List<DriverTravel> allDriverTravels; 
+	 private Set<Node> allNodes;
+	    
 	public LocalSearch(double startTimeOfAlgorithm, List<Trip> allTrips, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, List<Block> bestBlockSolution, List<Duty> bestDutySolution, double bestObjective, 
-			double degreeOfDutyDestruction, double degreeOfSequentialDestruction, double degreeOfIntegratedDestruction, int integratedIterationLimit, int integratedTimeLimit, int localSearchTimeLimit) throws IloException
+			double degreeOfDutyDestruction, double degreeOfSequentialDestruction, double degreeOfIntegratedDestruction, int integratedIterationLimit, int integratedTimeLimit, int localSearchTimeLimit, List<DriverTravel> allDriverTravels, Set<Node> allNodes) throws IloException
 	{
 		this.allTrips = allTrips;  
+		this.allDriverTravels = allDriverTravels; 
+		this.allNodes = allNodes;
 		this.deadrunMultipliers = deadrunMultipliers; 
 		this.idleTimeMultipliers = idleTimeMultipliers; 
 		this.vehicleGraphs = vehicleGraphs; 
@@ -188,7 +194,8 @@ public class LocalSearch
 			List<Trip> uncoveredTripsOfDriver = destroy.getUncoveredTripsOfDriver(); 
 			
 			double start = System.currentTimeMillis(); 
-			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver, this.integratedIterationLimit, this.integratedTimeLimit); 
+			RepairMethod repair = new RepairMethod(selectedDestroyMethod, this.allTrips, this.vehicleGraphs, this.driverGraphs, this.deadrunMultipliers, this.idleTimeMultipliers, intermediateBlockSolution, intermediateDutySolution, blocksRemoved, dutiesRemoved, deadrunsInSolution, idleTimesInSolution, uncoveredTripsOfVehicle, uncoveredTripsOfDriver, this.integratedIterationLimit, this.integratedTimeLimit, 
+			        this.allDriverTravels, this.allNodes); 
 			double end = System.currentTimeMillis(); 
 			this.totalNumberOfTimesMethodChosen[selectedDestroyMethod] = this.totalNumberOfTimesMethodChosen[selectedDestroyMethod] + 1; 
 			this.totalTimeTakenOfRepairMethods[selectedDestroyMethod] = this.totalTimeTakenOfRepairMethods[selectedDestroyMethod] + (end-start)/(double)(1000); 

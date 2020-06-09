@@ -185,7 +185,7 @@ public class App
     	
     	//double start = System.currentTimeMillis();  
 
-    	LocalSearch localSearch = new LocalSearch(startIniLo, allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), vehicleGraphs, driverGraphs, seq.getBlocksInSolution(), seq.getDutiesInSolution(), seq.getTotalObjective(), degreeOfDutyDestruction, degreeOfSequentialDestruction, degreeOfIntegratedDestruction, integratedIterationLimit, integratedTimeLimit, localSearchTimeLimit); 
+    	LocalSearch localSearch = new LocalSearch(startIniLo, allTrips, new HashMap<Deadrun, Double>(), new HashMap<IdleTime, Double>(), vehicleGraphs, driverGraphs, seq.getBlocksInSolution(), seq.getDutiesInSolution(), seq.getTotalObjective(), degreeOfDutyDestruction, degreeOfSequentialDestruction, degreeOfIntegratedDestruction, integratedIterationLimit, integratedTimeLimit, localSearchTimeLimit, allDriverTravels, allNodes); 
     	//blocksGenerated.addAll(initial.getBlocksInSolution()); 
     	//dutiesGenerated.addAll(initial.getDutiesInSolution()); 
     	//Set<Deadrun> deadrunsInSolution = new HashSet<Deadrun>(); 
@@ -203,9 +203,6 @@ public class App
     	//IndependentApproach ind = new IndependentApproach(allTrips, vehicleGraphs, driverGraphs); 
     	double end = System.currentTimeMillis(); 
     	System.out.println("Total time = " + (double)(end-startIniLo)/1000.00);
-    
-    	
-    	
-    	
+        	
     }
 }

@@ -15,27 +15,14 @@ public class LabelDriver implements Comparable<LabelDriver>
 	
 	private boolean labelDriverVisited; 
 	
-	private double delta; 
-	
 	public LabelDriver(LabelDriver sourceLabel, DriverVertex sourceDriverVertex, DriverArc extendingDriverArc, DriverREF updatedResources)
 	{
 		this.sourceLabel = sourceLabel; 
 		this.sourceDriverVertex = sourceDriverVertex; 
 		this.extendingDriverArc = extendingDriverArc; 
 		this.updatedResources = updatedResources; 
-		this.delta = Double.MAX_VALUE; 
 		
 		this.labelDriverVisited = false; 
-	}
-	
-	public void calculateDelta()
-	{
-	    int drivingDuration = 0; 
-	    for(Trip trip : this.updatedResources.getUpdatedTrips()) {
-	        drivingDuration = drivingDuration + (trip.getArrivalTime() - trip.getDepartureTime()); 
-	    }
-	    
-	    this.delta = this.updatedResources.getUpdatedTotalCost()/(double)drivingDuration; 
 	}
 	
 	public void labelDriverVisited()

@@ -17,7 +17,7 @@ import BranchPriceVehicle.BranchAndBoundVehicle;
 import Data.DriverTravel;
 import Data.Node;
 import Data.Trip;
-import Greedy.GreedyDriver;
+import Greedy.GreedyDriverExperimental;
 import Greedy.GreedyVehicle;
 import Networks.DriverArc;
 import Networks.DriverVertex;
@@ -66,10 +66,16 @@ public class RepairMethod
 	private int integratedIterationLimit; 
 	private int integratedTimeLimit; 
 	
-	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver, int integratedIterationLimit, int integratedTimeLimit) throws IloException
+	private List<DriverTravel> allDriverTravels; 
+    private Set<Node> allNodes;
+	
+	public RepairMethod(int chosenDestroyMethod, List<Trip> allTrips, Map<VehicleTypeDepot, DefaultDirectedGraph<VehicleVertex, VehicleArc>> vehicleGraphs, Map<DutyTypeDepot, DefaultDirectedGraph<DriverVertex, DriverArc>> driverGraphs, Map<Deadrun, Double> deadrunMultipliers, Map<IdleTime, Double> idleTimeMultipliers, List<Block> intermediateBlockSolution, List<Duty> intermediateDutySolution, List<Block> blocksRemoved, List<Duty> dutiesRemoved, Set<Deadrun> deadrunInSolution,  Set<IdleTime> idleTimeInSolution, List<Trip> uncoveredTripsOfVehicle, List<Trip> uncoveredTripsOfDriver, int integratedIterationLimit, int integratedTimeLimit, 
+	        List<DriverTravel> allDriverTravels, Set<Node> allNodes) throws IloException
 	{
 		this.chosenDestroyMethod = chosenDestroyMethod; 
-		this.allTrips = allTrips;  
+		this.allTrips = allTrips; 
+		this.allDriverTravels = allDriverTravels; 
+		this.allNodes = allNodes; 
 		this.vehicleGraphs = vehicleGraphs; 
 		this.driverGraphs = driverGraphs; 
 		this.deadrunMultipliers = deadrunMultipliers; 
@@ -123,18 +129,18 @@ public class RepairMethod
 			initialDuties.put(duty, 0);
 		}
 		
-		/*GreedyDriver greedy = new GreedyDriver(this.allTrips, this.driverGraphsCopy, initialDuties, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution); 
-        this.dutiesInSolution.addAll(greedy.getDutiesInSolution());*/
-		BranchAndBoundDriver bb = new BranchAndBoundDriver(this.allTrips, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true); 
-		this.dutiesInSolution.addAll(bb.getDutiesInSolution()); 
+		GreedyDriverExperimental greedy = new GreedyDriverExperimental(this.allTrips, initialDuties, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy.keySet().stream().findAny().get(), this.allDriverTravels, this.allNodes); 
+        this.dutiesInSolution.addAll(greedy.getDutiesInSolution());
+		/*BranchAndBoundDriver bb = new BranchAndBoundDriver(this.allTrips, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true); 
+		this.dutiesInSolution.addAll(bb.getDutiesInSolution()); */
 		this.blocksInSoution.addAll(this.intermediateBlockSolution); 
 		this.objective = 0.0;
 		for(Block block : this.blocksInSoution)
 		{
 			this.objective = this.objective + block.getTotalCostOfBlock(); 
 		}
-		//this.objective = this.objective + greedy.getObjective(); 
-		this.objective = this.objective + bb.getObjective(); 
+		this.objective = this.objective + greedy.getObjective(); 
+		//this.objective = this.objective + bb.getObjective(); 
 	}
 	
 	// Have to check this method when the arcs are being removed. Created problems during sensitivity analysis for BAASVest instances.
@@ -197,9 +203,13 @@ public class RepairMethod
 			initialDuties.put(duty, 1); 	
 		}
 		
-		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSoution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true);  
+		/*BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSoution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true);  
 		this.dutiesInSolution = dsp.getDutiesInSolution(); 
-		this.objective = this.objective + dsp.getObjective(); 
+		this.objective = this.objective + dsp.getObjective(); */
+		GreedyDriverExperimental greedy1 = new GreedyDriverExperimental(this.allTrips, initialDuties, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy.keySet().stream().findAny().get(), this.allDriverTravels, this.allNodes); 
+        this.dutiesInSolution.addAll(greedy1.getDutiesInSolution());
+        this.objective = this.objective + greedy1.getObjective(); 
+		
 	}
 	
 	private void repairIntegrated() throws IloException

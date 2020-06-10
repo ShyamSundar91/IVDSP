@@ -146,8 +146,8 @@ public class LocalSearch
 		this.maxIterations = 0; 
 		this.segmentSize = 25; 
 		
-		int numberOfDestroyMethods = 2;
-		int numberOfRepairMethods = 2; 
+		int numberOfDestroyMethods = 3;
+		int numberOfRepairMethods = 3; 
 		
 		double initialProbabilities = 1.0/(double)(numberOfDestroyMethods); 
 		this.destroyWeights = new double[numberOfDestroyMethods]; 

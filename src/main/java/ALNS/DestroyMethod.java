@@ -90,7 +90,7 @@ public class DestroyMethod
 		double additionalDegree = 0;
 		
 		
-		if(chosenDestroyMethod == 0)
+		if(chosenDestroyMethod == 0 || chosenDestroyMethod == 2)
 		{
 		    /*if(this.iteration <= maxIter)
             {
@@ -101,7 +101,7 @@ public class DestroyMethod
 		        randomRemovalOfDuties(this.degreeOfDutyDestruction); 
 		    }
 		}
-		else if(chosenDestroyMethod == 1)
+		else if(chosenDestroyMethod == 1 || chosenDestroyMethod == 3)
 		{
 		    /*if(this.iteration <= maxIter)
 		    {
@@ -113,7 +113,7 @@ public class DestroyMethod
 		    }
 		    
 		}
-		else if(chosenDestroyMethod == 2)
+		else if(chosenDestroyMethod == 4)
 		{
 			if(this.iteration <= maxIter)
 			{

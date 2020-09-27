@@ -98,15 +98,15 @@ public class RepairMethod
 		this.integratedTimeLimit = integratedTimeLimit; 
 		
 
-		if(this.chosenDestroyMethod == 0)
+		if(this.chosenDestroyMethod == 0 || this.chosenDestroyMethod == 2)
 		{
 		    repairDriverSchedulingProblem(); 
 		}
-		else if(this.chosenDestroyMethod == 1)
+		else if(this.chosenDestroyMethod == 1 || this.chosenDestroyMethod == 3) 
 		{
 			repairVehicleAndDriverSequentially();
 		}
-		else if(this.chosenDestroyMethod == 2)
+		else if(this.chosenDestroyMethod == 4)
 		{
 			repairIntegrated();
 		}
@@ -129,18 +129,25 @@ public class RepairMethod
 			initialDuties.put(duty, 0);
 		}
 		
-		/*GreedyDriverExperimental greedy = new GreedyDriverExperimental(this.allTrips, initialDuties, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy.keySet().stream().findAny().get(), this.allDriverTravels, this.allNodes); 
-        this.dutiesInSolution.addAll(greedy.getDutiesInSolution());*/
-		BranchAndBoundDriver bb = new BranchAndBoundDriver(this.allTrips, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true); 
-		this.dutiesInSolution.addAll(bb.getDutiesInSolution()); 
-		this.blocksInSoution.addAll(this.intermediateBlockSolution); 
 		this.objective = 0.0;
+		
+		if(this.chosenDestroyMethod == 0) {
+		    GreedyDriverExperimental greedy = new GreedyDriverExperimental(this.allTrips, initialDuties, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy.keySet().stream().findAny().get(), this.allDriverTravels, this.allNodes); 
+	        this.dutiesInSolution.addAll(greedy.getDutiesInSolution());
+	        this.objective = this.objective + greedy.getObjective(); 
+		} else if(this.chosenDestroyMethod == 2) {
+		    BranchAndBoundDriver bb = new BranchAndBoundDriver(this.allTrips, this.intermediateBlockSolution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true); 
+	        this.dutiesInSolution.addAll(bb.getDutiesInSolution()); 
+	        this.objective = this.objective + bb.getObjective();
+		}
+		
+		this.blocksInSoution.addAll(this.intermediateBlockSolution); 		
 		for(Block block : this.blocksInSoution)
 		{
 			this.objective = this.objective + block.getTotalCostOfBlock(); 
 		}
-		//this.objective = this.objective + greedy.getObjective(); 
-		this.objective = this.objective + bb.getObjective(); 
+	
+		 
 	}
 	
 	// Have to check this method when the arcs are being removed. Created problems during sensitivity analysis for BAASVest instances.
@@ -164,14 +171,18 @@ public class RepairMethod
 		
 		
 		this.objective = 0; 
-		/*GreedyVehicle greedy = new GreedyVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks); 
-        this.blocksInSoution.addAll(greedy.getBlocksInSolution()); 
-        this.deadrunInSolution.addAll(greedy.getDeadrunsInSolution()); 
-        this.idleTimeInSolution.addAll(greedy.getIdleTimesInSolution()); */
-		BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks, this.deadrunMultipliers, this.idleTimeMultipliers, true);
-		this.blocksInSoution.addAll(bbVehicle.getBlocksInSolution()); 
-		this.deadrunInSolution.addAll(bbVehicle.getDeadrunsInSolution()); 
-		this.idleTimeInSolution.addAll(bbVehicle.getIdleTimesInSolution()); 
+		if(this.chosenDestroyMethod == 1) {
+		    GreedyVehicle greedy = new GreedyVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks); 
+	        this.blocksInSoution.addAll(greedy.getBlocksInSolution()); 
+	        this.deadrunInSolution.addAll(greedy.getDeadrunsInSolution()); 
+	        this.idleTimeInSolution.addAll(greedy.getIdleTimesInSolution());
+		}else if(this.chosenDestroyMethod == 3) {
+		    BranchAndBoundVehicle bbVehicle = new BranchAndBoundVehicle(this.allTrips, this.vehicleGraphsCopy, initialBlocks, this.deadrunMultipliers, this.idleTimeMultipliers, true);
+	        this.blocksInSoution.addAll(bbVehicle.getBlocksInSolution()); 
+	        this.deadrunInSolution.addAll(bbVehicle.getDeadrunsInSolution()); 
+	        this.idleTimeInSolution.addAll(bbVehicle.getIdleTimesInSolution());  
+		}
+		
 		for(Block block : this.blocksInSoution)
 		{
 			this.objective = this.objective + block.getTotalCostOfBlock(); 
@@ -203,12 +214,15 @@ public class RepairMethod
 			initialDuties.put(duty, 1); 	
 		}
 		
-		BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSoution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true);  
-		this.dutiesInSolution = dsp.getDutiesInSolution(); 
-		this.objective = this.objective + dsp.getObjective(); 
-		/*GreedyDriverExperimental greedy1 = new GreedyDriverExperimental(this.allTrips, initialDuties, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy.keySet().stream().findAny().get(), this.allDriverTravels, this.allNodes); 
-        this.dutiesInSolution.addAll(greedy1.getDutiesInSolution());
-        this.objective = this.objective + greedy1.getObjective(); */
+		if(this.chosenDestroyMethod == 1) {
+		    GreedyDriverExperimental greedy1 = new GreedyDriverExperimental(this.allTrips, initialDuties, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy.keySet().stream().findAny().get(), this.allDriverTravels, this.allNodes); 
+	        this.dutiesInSolution.addAll(greedy1.getDutiesInSolution());
+	        this.objective = this.objective + greedy1.getObjective(); 
+		}else if(this.chosenDestroyMethod == 3) {
+		    BranchAndBoundDriver dsp = new BranchAndBoundDriver(this.allTrips, this.blocksInSoution, this.deadrunInSolution, this.idleTimeInSolution, this.driverGraphsCopy, initialDuties, true);  
+	        this.dutiesInSolution = dsp.getDutiesInSolution(); 
+	        this.objective = this.objective + dsp.getObjective(); 
+		}
 		
 	}
 	
